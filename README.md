@@ -18,7 +18,7 @@ Paperless backend API. It exposes **73 MCP tools** covering
 - **⚡ TOON Optimization** — Bulk list responses are automatically compressed
   using TOON (Token-Optimized Object Notation) to reduce token consumption
   and maximize context window efficiency.
-- **⚡ Efficient Gets** — GET responses return only commonly used fields by
+- **🚀 Efficient Gets** — GET responses return only commonly used fields by
   default. Full objects are available via an `include_all_fields` flag.
 - **🧪 Comprehensive Testing** — 82+ automated tests covering all tool domains,
   run via the test runner pipeline.
@@ -63,6 +63,7 @@ The MCP server serves at `http://paperless-mcp:6038/mcp` (Streamable HTTP).
 ## ⚠️ Important Notes
 
 - **📋 `include_all_fields`** — The `include_all_fields` parameter (available on all `get_*` and `list_*` tools) controls whether all available fields are included in responses. Defaults to `False` for performance; set to `True` only when additional fields are needed.
+- **🔒 `ALLOW_ALL_AGGREGATE`** — Controls whether aggregate listing tools respect the `include_all_fields` parameter. When set to `false` (default), all aggregate list operations silently return only default fields regardless of the caller's request.
 - **⚡ TOON Compression** — All bulk list responses are automatically compressed using TOON (Token-Optimized Object Notation) to reduce token consumption by 30-60%.
 - **📝 Required Fields & Defaults** — Each `create_*` tool requires specific key fields (e.g. `name` for resources). All other fields default to empty strings or reasonable values.
 
