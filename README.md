@@ -29,8 +29,8 @@ Paperless backend API. It exposes **76 MCP tools** covering
 |----------|----------|-------------|
 | `PAPERLESS_BASE_URL` | Yes | Docker-internal URL of the Paperless API (e.g. `http://paperless-app:8000`) |
 | `MCP_SERVER_PORT` | Yes | Port number the MCP server listens on |
-| `PAPERLESS_PUBLIC_URL` | No | External-facing URL of your Paperless instance (e.g. `https://paperless.example.com`). When set, `get_document_download_url`, `get_document_preview_url`, and `get_document_thumbnail_url` return this base instead of the internal `PAPERLESS_BASE_URL`. Falls back to `PAPERLESS_BASE_URL` if unset. |
 | `ALLOW_ALL_AGGREGATE` | No | When `true`, aggregate listing tools honor the `include_all_fields` parameter. When `false` (default), the parameter is silently forced to `False` for aggregate list operations. |
+| `PAPERLESS_PUBLIC_URL` | No | External-facing URL of your Paperless instance (e.g. `https://paperless.example.com`). When set, `get_document_download_url`, `get_document_preview_url`, and `get_document_thumbnail_url` return this base instead of the internal `PAPERLESS_BASE_URL`. Falls back to `PAPERLESS_BASE_URL` if unset. |
 
 ## 📦 Installation & Local Development
 
