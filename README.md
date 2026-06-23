@@ -2,8 +2,8 @@
 
 This repository contains a Model Context Protocol (MCP) server that acts
 as a secure, multi-tenant proxy between an AI Assistant and the
-Paperless backend API. It exposes **73 MCP tools** covering
-13 resource domains with full CRUD, search, URL generation, and system operations.
+Paperless backend API. It exposes **76 MCP tools** covering
+13 resource domains with full CRUD, search, URL generation, bulk editing, and system operations.
 
 ## ✨ Features
 
@@ -13,7 +13,7 @@ Paperless backend API. It exposes **73 MCP tools** covering
 - **👥 Multi-Tenancy** — Uses Python `contextvars` to maintain thread-safe
   user identity isolation, ensuring all AI-driven actions are scoped to
   the authenticated user's permissions.
-- **📊 Full Paperless Coverage** — 73 tools mapped to Paperless
+- **📊 Full Paperless Coverage** — 76 tools mapped to Paperless
   API endpoints across 13 resource domains.
 - **⚡ TOON Optimization** — Bulk list responses are automatically compressed
   using TOON (Token-Optimized Object Notation) to reduce token consumption
@@ -69,9 +69,9 @@ The MCP server serves at `http://paperless-mcp:6038/mcp` (Streamable HTTP).
 
 ## 🛠️ API Tool Mapping
 
-The server implements 73 MCP tools organized into the following categories:
+The server implements 76 MCP tools organized into the following categories:
 
-### 📄 Documents (14 tools)
+### 📄 Documents (17 tools)
 - `get_all_documents` — List all documents
 - `get_document_by_id` — Get a single document by ID
 - `update_document` — Update a document's metadata
@@ -86,6 +86,9 @@ The server implements 73 MCP tools organized into the following categories:
 - `get_document_download_url` — Get download URL for a document
 - `get_document_preview_url` — Get preview URL for a document
 - `get_document_thumbnail_url` — Get thumbnail URL for a document
+- `bulk_update_documents` — Update multiple documents at once
+- `reprocess_documents` — Re-run OCR/processing on documents
+- `assign_custom_field` — Assign or remove a custom field value on documents
 
 ### 👤 Correspondents (5 tools)
 - `get_all_correspondents` — List all correspondents

@@ -513,6 +513,37 @@ async def main():
                 "get_document_thumbnail_url", {"id": doc_id}
             )
 
+            # Bulk update, reprocess, and assign custom field tests
+            await run_test(
+                session, "D16 bulk_update_documents", "bulk_update_documents",
+                {"documents": str(doc_id), "method": "set_correspondent",
+                 "parameters": '{"correspondent": null}'}
+            )
+            await run_test(
+                session, "D17 reprocess_documents", "reprocess_documents",
+                {"documents": str(doc_id)}
+            )
+            # Create a temp custom field for the assign test, then clean it up
+            await run_test_with_store(
+                session, "D18 create_temp_field", "create_custom_field",
+                {"name": f"t{rid}-AssignField", "data_type": "string"},
+                store_key="temp_field"
+            )
+            temp_field_id = pick_id("temp_field")
+            if temp_field_id:
+                await run_test(
+                    session, "D19 assign_custom_field", "assign_custom_field",
+                    {"documents": str(doc_id), "field_id": temp_field_id, "value": "test-value"}
+                )
+                await run_test(
+                    session, "D20 remove_custom_field", "assign_custom_field",
+                    {"documents": str(doc_id), "field_id": temp_field_id, "remove": True}
+                )
+                await run_test(
+                    session, "D21 delete_temp_field", "delete_custom_field_by_id",
+                    {"id": temp_field_id}
+                )
+
             # Share link tests run here while the document still exists
             await run_test(
                 session, "F1b get_all_documents_for_share", "get_all_documents"

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from contextvars import ContextVar
@@ -454,6 +455,103 @@ async def get_document_thumbnail_url(
     """
     public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
     return {"thumbnail_url": f"{public_url}/api/documents/{id}/thumb/"}
+
+
+@mcp.tool()
+async def bulk_update_documents(
+    documents: str,
+    method: str,
+    parameters: str = "{}",
+    all: bool = False,
+    filters: str = "{}",
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Update multiple documents at once using a bulk edit method.
+
+    Args:
+        documents: Comma-separated list of document IDs to update (required if all is False).
+        method: The bulk edit method. One of: set_correspondent, set_document_type, set_storage_path, add_tag, remove_tag, modify_tags, modify_custom_fields, delete.
+        parameters: JSON string of method-specific parameters (e.g. '{"correspondent": 5}').
+        all: When true, applies to all documents matching filters instead of the documents list.
+        filters: JSON string of filter parameters used when all is true.
+    """
+    doc_ids = [int(d.strip()) for d in documents.split(",") if d.strip()]
+    parsed_params: dict[str, Any] = {}
+    if parameters and parameters != "{}":
+        parsed_params = json.loads(parameters)
+    parsed_filters: dict[str, Any] = {}
+    if filters and filters != "{}":
+        parsed_filters = json.loads(filters)
+    payload: dict[str, Any] = {
+        "method": method,
+        "parameters": parsed_params,
+        "documents": doc_ids,
+    }
+    if all:
+        payload["all"] = True
+    if parsed_filters:
+        payload["filters"] = parsed_filters
+    data = await get_client().bulk_edit_documents(payload, get_user_token())
+    return {"result": data}
+
+
+@mcp.tool()
+async def reprocess_documents(
+    documents: str = "",
+    all: bool = False,
+    filters: str = "{}",
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Reprocess (re-run OCR/document processing on) one or more documents.
+
+    Args:
+        documents: Comma-separated list of document IDs to reprocess. Ignored when all is true.
+        all: When true, reprocesses all documents matching filters instead of the documents list.
+        filters: JSON string of filter parameters used when all is true.
+    """
+    doc_ids = [int(d.strip()) for d in documents.split(",") if d.strip()]
+    parsed_filters: dict[str, Any] = {}
+    if filters and filters != "{}":
+        parsed_filters = json.loads(filters)
+    payload: dict[str, Any] = {
+        "documents": doc_ids,
+    }
+    if all:
+        payload["all"] = True
+    if parsed_filters:
+        payload["filters"] = parsed_filters
+    data = await get_client().reprocess_documents(payload, get_user_token())
+    return {"result": data}
+
+
+@mcp.tool()
+async def assign_custom_field(
+    documents: str,
+    field_id: int,
+    value: str = "",
+    remove: bool = False,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Assign or remove a custom field value on one or more documents.
+
+    Args:
+        documents: Comma-separated list of document IDs to update (required).
+        field_id: The ID of the custom field definition (required).
+        value: The value to assign to the custom field (required unless remove is true).
+        remove: When true, removes the custom field from the documents instead of assigning a value.
+    """
+    doc_ids = [int(d.strip()) for d in documents.split(",") if d.strip()]
+    if remove:
+        params: dict[str, Any] = {"add_custom_fields": [], "remove_custom_fields": [field_id]}
+    else:
+        params = {"add_custom_fields": {str(field_id): value}, "remove_custom_fields": []}
+    payload: dict[str, Any] = {
+        "documents": doc_ids,
+        "method": "modify_custom_fields",
+        "parameters": params,
+    }
+    data = await get_client().bulk_edit_documents(payload, get_user_token())
+    return {"result": data}
 
 
 @mcp.tool()

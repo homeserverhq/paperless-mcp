@@ -360,6 +360,12 @@ class PaperlessClient:
         params: dict[str, Any] = {"term": term, "limit": limit}
         return await self.get("/api/search/autocomplete/", api_key, params=params)
 
+    async def bulk_edit_documents(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+        return await self.post("/api/documents/bulk_edit/", api_key, json=payload)
+
+    async def reprocess_documents(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+        return await self.post("/api/documents/reprocess/", api_key, json=payload)
+
     # =========================================================================
     # System Domain Methods
     # =========================================================================
