@@ -2,8 +2,8 @@
 
 This repository contains a Model Context Protocol (MCP) server that acts
 as a secure, multi-tenant proxy between an AI Assistant and the
-Paperless backend API. It exposes **70 MCP tools** covering
-13 resource domains with full CRUD, search, and system operations.
+Paperless backend API. It exposes **73 MCP tools** covering
+13 resource domains with full CRUD, search, URL generation, and system operations.
 
 ## ✨ Features
 
@@ -13,7 +13,7 @@ Paperless backend API. It exposes **70 MCP tools** covering
 - **👥 Multi-Tenancy** — Uses Python `contextvars` to maintain thread-safe
   user identity isolation, ensuring all AI-driven actions are scoped to
   the authenticated user's permissions.
-- **📊 Full Paperless Coverage** — 70 tools mapped to Paperless
+- **📊 Full Paperless Coverage** — 73 tools mapped to Paperless
   API endpoints across 13 resource domains.
 - **⚡ TOON Optimization** — Bulk list responses are automatically compressed
   using TOON (Token-Optimized Object Notation) to reduce token consumption
@@ -29,6 +29,7 @@ Paperless backend API. It exposes **70 MCP tools** covering
 |----------|----------|-------------|
 | `PAPERLESS_BASE_URL` | Yes | Docker-internal URL of the Paperless API (e.g. `http://paperless-app:8000`) |
 | `MCP_SERVER_PORT` | Yes | Port number the MCP server listens on |
+| `PAPERLESS_PUBLIC_URL` | No | External-facing URL of your Paperless instance (e.g. `https://paperless.example.com`). When set, `get_document_download_url`, `get_document_preview_url`, and `get_document_thumbnail_url` return this base instead of the internal `PAPERLESS_BASE_URL`. Falls back to `PAPERLESS_BASE_URL` if unset. |
 | `ALLOW_ALL_AGGREGATE` | No | When `true`, aggregate listing tools honor the `include_all_fields` parameter. When `false` (default), the parameter is silently forced to `False` for aggregate list operations. |
 
 ## 📦 Installation & Local Development
@@ -67,9 +68,9 @@ The MCP server serves at `http://paperless-mcp:6038/mcp` (Streamable HTTP).
 
 ## 🛠️ API Tool Mapping
 
-The server implements 70 MCP tools organized into the following categories:
+The server implements 73 MCP tools organized into the following categories:
 
-### 📁 Documents (11 tools)
+### 📄 Documents (14 tools)
 - `get_all_documents` — List all documents
 - `get_document_by_id` — Get a single document by ID
 - `update_document` — Update a document's metadata
@@ -81,50 +82,53 @@ The server implements 70 MCP tools organized into the following categories:
 - `get_document_notes` — List notes on a document
 - `create_document_note` — Add a note to a document
 - `delete_document_note` — Delete a note from a document
+- `get_document_download_url` — Get download URL for a document
+- `get_document_preview_url` — Get preview URL for a document
+- `get_document_thumbnail_url` — Get thumbnail URL for a document
 
-### 📁 Correspondents (5 tools)
+### 👤 Correspondents (5 tools)
 - `get_all_correspondents` — List all correspondents
 - `get_correspondent_by_id` — Get a single correspondent
 - `create_correspondent` — Create a new correspondent
 - `update_correspondent` — Update a correspondent
 - `delete_correspondent_by_id` — Delete a correspondent
 
-### 📁 Document Types (5 tools)
+### 📋 Document Types (5 tools)
 - `get_all_document_types` — List all document types
 - `get_document_type_by_id` — Get a single document type
 - `create_document_type` — Create a new document type
 - `update_document_type` — Update a document type
 - `delete_document_type_by_id` — Delete a document type
 
-### 📁 Tags (5 tools)
+### 🔖 Tags (5 tools)
 - `get_all_tags` — List all tags
 - `get_tag_by_id` — Get a single tag
 - `create_tag` — Create a new tag
 - `update_tag` — Update a tag
 - `delete_tag_by_id` — Delete a tag
 
-### 📁 Storage Paths (5 tools)
+### 📂 Storage Paths (5 tools)
 - `get_all_storage_paths` — List all storage paths
 - `get_storage_path_by_id` — Get a single storage path
 - `create_storage_path` — Create a new storage path
 - `update_storage_path` — Update a storage path
 - `delete_storage_path_by_id` — Delete a storage path
 
-### 📁 Saved Views (5 tools)
+### 👁️ Saved Views (5 tools)
 - `get_all_saved_views` — List all saved views
 - `get_saved_view_by_id` — Get a single saved view
 - `create_saved_view` — Create a new saved view
 - `update_saved_view` — Update a saved view
 - `delete_saved_view_by_id` — Delete a saved view
 
-### 📁 Custom Fields (5 tools)
+### ✏️ Custom Fields (5 tools)
 - `get_all_custom_fields` — List all custom fields
 - `get_custom_field_by_id` — Get a single custom field
 - `create_custom_field` — Create a new custom field
 - `update_custom_field` — Update a custom field
 - `delete_custom_field_by_id` — Delete a custom field
 
-### 📁 Tasks (6 tools)
+### ⚙️ Tasks (6 tools)
 - `get_all_tasks` — List all tasks
 - `get_task_by_id` — Get a single task
 - `get_task_summary` — Get aggregated task statistics
@@ -132,27 +136,27 @@ The server implements 70 MCP tools organized into the following categories:
 - `get_active_tasks` — Get currently running tasks
 - `acknowledge_tasks` — Acknowledge one or more tasks
 
-### 📁 Share Links (4 tools)
+### 🔗 Share Links (4 tools)
 - `get_all_share_links` — List all share links
 - `get_share_link_by_id` — Get a single share link
 - `create_share_link` — Create a new share link
 - `delete_share_link_by_id` — Delete a share link
 
-### 📁 Workflows (5 tools)
+### 🔄 Workflows (5 tools)
 - `get_all_workflows` — List all workflows
 - `get_workflow_by_id` — Get a single workflow
 - `create_workflow` — Create a new workflow
 - `update_workflow` — Update a workflow
 - `delete_workflow_by_id` — Delete a workflow
 
-### 📁 Mail Accounts (5 tools)
+### 📧 Mail Accounts (5 tools)
 - `get_all_mail_accounts` — List all mail accounts
 - `get_mail_account_by_id` — Get a single mail account
 - `create_mail_account` — Create a new mail account
 - `update_mail_account` — Update a mail account
 - `delete_mail_account_by_id` — Delete a mail account
 
-### 📁 Mail Rules (5 tools)
+### 📨 Mail Rules (5 tools)
 - `get_all_mail_rules` — List all mail rules
 - `get_mail_rule_by_id` — Get a single mail rule
 - `create_mail_rule` — Create a new mail rule

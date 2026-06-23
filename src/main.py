@@ -12,6 +12,7 @@ from .client import PaperlessClient
 _current_user_token: ContextVar[Optional[str]] = ContextVar("current_user_token", default=None)
 
 ALLOW_ALL_AGGREGATE = os.getenv("ALLOW_ALL_AGGREGATE", "false").lower() in ("true", "1", "yes")
+PAPERLESS_PUBLIC_URL = os.getenv("PAPERLESS_PUBLIC_URL", "").rstrip("/")
 
 
 class AuthMiddleware:
@@ -411,6 +412,48 @@ async def get_next_asn(ctx: Context = None) -> dict[str, Any]:
     """Get the next available Archive Serial Number."""
     data = await get_client().get_next_asn(get_user_token())
     return {"next_asn": data}
+
+
+@mcp.tool()
+async def get_document_download_url(
+    id: int,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Get the download URL for a document's original file.
+
+    Args:
+        id: The unique ID of the document (required).
+    """
+    public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
+    return {"download_url": f"{public_url}/api/documents/{id}/download/"}
+
+
+@mcp.tool()
+async def get_document_preview_url(
+    id: int,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Get the preview URL for a document.
+
+    Args:
+        id: The unique ID of the document (required).
+    """
+    public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
+    return {"preview_url": f"{public_url}/api/documents/{id}/preview/"}
+
+
+@mcp.tool()
+async def get_document_thumbnail_url(
+    id: int,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Get the thumbnail URL for a document.
+
+    Args:
+        id: The unique ID of the document (required).
+    """
+    public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
+    return {"thumbnail_url": f"{public_url}/api/documents/{id}/thumb/"}
 
 
 @mcp.tool()

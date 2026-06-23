@@ -499,6 +499,20 @@ async def main():
                 {"id": doc_id, "title": f"Test title {rid}"}
             )
 
+            # URL tools (construct URLs from PAPERLESS_PUBLIC_URL or PAPERLESS_BASE_URL)
+            await run_test(
+                session, "D13 get_document_download_url",
+                "get_document_download_url", {"id": doc_id}
+            )
+            await run_test(
+                session, "D14 get_document_preview_url",
+                "get_document_preview_url", {"id": doc_id}
+            )
+            await run_test(
+                session, "D15 get_document_thumbnail_url",
+                "get_document_thumbnail_url", {"id": doc_id}
+            )
+
             # Share link tests run here while the document still exists
             await run_test(
                 session, "F1b get_all_documents_for_share", "get_all_documents"
