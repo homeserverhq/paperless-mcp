@@ -42,7 +42,7 @@ Paperless backend API. It exposes **76 MCP tools** covering
 3. Run the server:
    ```bash
    export PAPERLESS_BASE_URL=http://paperless-app:8000
-   export MCP_SERVER_PORT=6038
+   export MCP_SERVER_PORT=80
    python -m src.main
    ```
 
@@ -54,11 +54,11 @@ Build and run the server using Docker:
 docker build -t paperless-mcp:latest .
 docker run -d --name paperless-mcp \
     -e PAPERLESS_BASE_URL="http://paperless-app:8000" \
-    -e MCP_SERVER_PORT=6038 \
+    -e MCP_SERVER_PORT=80 \
     paperless-mcp:latest
 ```
 
-The MCP server serves at `http://paperless-mcp:6038/mcp` (Streamable HTTP).
+The MCP server serves at `http://paperless-mcp:80/mcp` (Streamable HTTP).
 
 ## ⚠️ Important Notes
 
