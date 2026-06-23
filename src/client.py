@@ -19,11 +19,20 @@ def _normalize_datetime(value: str) -> str:
     return value
 
 
-DOCUMENT_COMMON_FIELDS = (
-    "id,title,correspondent,document_type,storage_path,tags,"
-    "created,created_date,modified,added,archive_serial_number,"
-    "owner,page_count,mime_type"
-)
+COMMON_FIELDS: dict[str, str] = {
+    "Documents": "id,title,correspondent,document_type,tags,page_count",
+    "Correspondents": "id,name,slug,document_count",
+    "DocumentTypes": "id,name,slug,document_count",
+    "Tags": "id,name,slug,color,document_count",
+    "StoragePaths": "id,name,path,document_count",
+    "SavedViews": "id,name,show_on_dashboard,show_in_sidebar,sort_field",
+    "CustomFields": "id,name,data_type",
+    "Workflows": "id,name,order,enabled",
+    "MailAccounts": "id,name,username,imap_server,imap_port,is_active",
+    "MailRules": "id,name,account,action,folder,order",
+    "Tasks": "id,task_id,task_file_name,date_created,type,status",
+    "ShareLinks": "id,document,created,expiration,file_version",
+}
 
 
 class PaperlessClient:
@@ -72,20 +81,31 @@ class PaperlessClient:
     def _normalize_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {k: _normalize_datetime(v) if isinstance(v, str) else v for k, v in payload.items()}
 
+    def _filter_fields(self, item: dict, fields_str: str) -> dict:
+        allowed = set(f.strip() for f in fields_str.split(","))
+        return {k: v for k, v in item.items() if k in allowed}
+
+    def _filter_list_response(self, response: Any, fields_str: str) -> Any:
+        if isinstance(response, dict) and "results" in response:
+            response["results"] = [self._filter_fields(item, fields_str) for item in response["results"]]
+        elif isinstance(response, list):
+            response = [self._filter_fields(item, fields_str) for item in response]
+        return response
+
     # =========================================================================
     # Document Domain Methods
     # =========================================================================
 
-    async def get_all_documents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page: int = 1, page_size: int = 100) -> Any:
+    async def get_all_documents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page: int = 1, page_size: int = 500) -> Any:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if not include_all_fields:
-            params["fields"] = DOCUMENT_COMMON_FIELDS
+            params["fields"] = COMMON_FIELDS["Documents"]
         return await self.get("/api/documents/", api_key, params=params)
 
     async def get_document_by_id(self, document_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         params: dict[str, Any] = {}
         if not include_all_fields:
-            params["fields"] = DOCUMENT_COMMON_FIELDS
+            params["fields"] = COMMON_FIELDS["Documents"]
         return await self.get(f"/api/documents/{document_id}/", api_key, params=params or None)
 
     async def update_document(self, document_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
@@ -120,11 +140,17 @@ class PaperlessClient:
     # Correspondent Domain Methods
     # =========================================================================
 
-    async def get_all_correspondents(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/correspondents/", api_key)
+    async def get_all_correspondents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/correspondents/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["Correspondents"])
+        return data
 
     async def get_correspondent_by_id(self, correspondent_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/correspondents/{correspondent_id}/", api_key)
+        data = await self.get(f"/api/correspondents/{correspondent_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Correspondents"])
+        return data
 
     async def create_correspondent(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -141,11 +167,17 @@ class PaperlessClient:
     # Document Type Domain Methods
     # =========================================================================
 
-    async def get_all_document_types(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/document_types/", api_key)
+    async def get_all_document_types(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/document_types/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["DocumentTypes"])
+        return data
 
     async def get_document_type_by_id(self, document_type_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/document_types/{document_type_id}/", api_key)
+        data = await self.get(f"/api/document_types/{document_type_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["DocumentTypes"])
+        return data
 
     async def create_document_type(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -162,11 +194,17 @@ class PaperlessClient:
     # Tag Domain Methods
     # =========================================================================
 
-    async def get_all_tags(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/tags/", api_key)
+    async def get_all_tags(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/tags/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["Tags"])
+        return data
 
     async def get_tag_by_id(self, tag_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/tags/{tag_id}/", api_key)
+        data = await self.get(f"/api/tags/{tag_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Tags"])
+        return data
 
     async def create_tag(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -183,11 +221,17 @@ class PaperlessClient:
     # Storage Path Domain Methods
     # =========================================================================
 
-    async def get_all_storage_paths(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/storage_paths/", api_key)
+    async def get_all_storage_paths(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/storage_paths/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["StoragePaths"])
+        return data
 
     async def get_storage_path_by_id(self, storage_path_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/storage_paths/{storage_path_id}/", api_key)
+        data = await self.get(f"/api/storage_paths/{storage_path_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["StoragePaths"])
+        return data
 
     async def create_storage_path(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -204,11 +248,17 @@ class PaperlessClient:
     # Saved View Domain Methods
     # =========================================================================
 
-    async def get_all_saved_views(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/saved_views/", api_key)
+    async def get_all_saved_views(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/saved_views/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["SavedViews"])
+        return data
 
     async def get_saved_view_by_id(self, saved_view_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/saved_views/{saved_view_id}/", api_key)
+        data = await self.get(f"/api/saved_views/{saved_view_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["SavedViews"])
+        return data
 
     async def create_saved_view(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -225,11 +275,17 @@ class PaperlessClient:
     # Custom Field Domain Methods
     # =========================================================================
 
-    async def get_all_custom_fields(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/custom_fields/", api_key)
+    async def get_all_custom_fields(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/custom_fields/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["CustomFields"])
+        return data
 
     async def get_custom_field_by_id(self, custom_field_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/custom_fields/{custom_field_id}/", api_key)
+        data = await self.get(f"/api/custom_fields/{custom_field_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["CustomFields"])
+        return data
 
     async def create_custom_field(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -246,11 +302,17 @@ class PaperlessClient:
     # Task Domain Methods
     # =========================================================================
 
-    async def get_all_tasks(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/tasks/", api_key)
+    async def get_all_tasks(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/tasks/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["Tasks"])
+        return data
 
     async def get_task_by_id(self, task_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/tasks/{task_id}/", api_key)
+        data = await self.get(f"/api/tasks/{task_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Tasks"])
+        return data
 
     async def get_task_summary(self, api_key: Optional[str] = None, days: int = 30) -> Any:
         return await self.get("/api/tasks/summary/", api_key, params={"days": days})
@@ -268,11 +330,17 @@ class PaperlessClient:
     # Share Link Domain Methods
     # =========================================================================
 
-    async def get_all_share_links(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/share_links/", api_key)
+    async def get_all_share_links(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/share_links/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["ShareLinks"])
+        return data
 
     async def get_share_link_by_id(self, share_link_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/share_links/{share_link_id}/", api_key)
+        data = await self.get(f"/api/share_links/{share_link_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["ShareLinks"])
+        return data
 
     async def create_share_link(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -285,11 +353,17 @@ class PaperlessClient:
     # Workflow Domain Methods
     # =========================================================================
 
-    async def get_all_workflows(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/workflows/", api_key)
+    async def get_all_workflows(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/workflows/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["Workflows"])
+        return data
 
     async def get_workflow_by_id(self, workflow_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/workflows/{workflow_id}/", api_key)
+        data = await self.get(f"/api/workflows/{workflow_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Workflows"])
+        return data
 
     async def create_workflow(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -306,11 +380,17 @@ class PaperlessClient:
     # Mail Account Domain Methods
     # =========================================================================
 
-    async def get_all_mail_accounts(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/mail_accounts/", api_key)
+    async def get_all_mail_accounts(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/mail_accounts/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["MailAccounts"])
+        return data
 
     async def get_mail_account_by_id(self, mail_account_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/mail_accounts/{mail_account_id}/", api_key)
+        data = await self.get(f"/api/mail_accounts/{mail_account_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["MailAccounts"])
+        return data
 
     async def create_mail_account(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)
@@ -327,11 +407,17 @@ class PaperlessClient:
     # Mail Rule Domain Methods
     # =========================================================================
 
-    async def get_all_mail_rules(self, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get("/api/mail_rules/", api_key)
+    async def get_all_mail_rules(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+        data = await self.get("/api/mail_rules/", api_key, params={"page_size": page_size})
+        if not include_all_fields:
+            data = self._filter_list_response(data, COMMON_FIELDS["MailRules"])
+        return data
 
     async def get_mail_rule_by_id(self, mail_rule_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
-        return await self.get(f"/api/mail_rules/{mail_rule_id}/", api_key)
+        data = await self.get(f"/api/mail_rules/{mail_rule_id}/", api_key)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["MailRules"])
+        return data
 
     async def create_mail_rule(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
         payload = self._normalize_payload(payload)

@@ -9,6 +9,7 @@ Tests exist to find flaws in main.py and client.py; the developer
 fixes application code so that tests pass as a consequence.
 """
 
+import asyncio
 import json
 import os
 import sys
@@ -23,6 +24,8 @@ from toon_mcp import toon_to_json
 MCP_SERVER_PORT = os.environ.get("MCP_SERVER_PORT", "")
 API_KEY = os.environ.get("API_KEY", "")
 MCP_URL = f"http://localhost:{MCP_SERVER_PORT}/mcp"
+
+PAPERLESS_DIRECT_URL = os.environ.get("PAPERLESS_DIRECT_URL", "http://localhost:8050")
 
 MCP_HEADERS = {
     "Authorization": f"Token {API_KEY}",
@@ -288,6 +291,51 @@ async def run_verify_delete(
 
 
 # =============================================================================
+# Prep Phase: Create Disposable Test Document
+# =============================================================================
+
+async def prep_create_test_document(api_key: str) -> int:
+    """Upload a disposable test document directly to Paperless and return its ID."""
+    headers = {"Authorization": f"Token {api_key}"}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{PAPERLESS_DIRECT_URL}/api/documents/",
+            headers=headers,
+            params={"page_size": 1, "ordering": "-id"},
+        )
+        r.raise_for_status()
+        existing = r.json()
+        max_id = max((d["id"] for d in existing.get("results", [])), default=0)
+
+        files = {
+            "document": (
+                "opencode-test.txt",
+                b"OpenCode test document - safe to delete",
+                "text/plain",
+            )
+        }
+        upload_r = await client.post(
+            f"{PAPERLESS_DIRECT_URL}/api/documents/post_document/",
+            headers=headers,
+            files=files,
+        )
+        upload_r.raise_for_status()
+
+        for _ in range(60):
+            await asyncio.sleep(1)
+            r = await client.get(
+                f"{PAPERLESS_DIRECT_URL}/api/documents/",
+                headers=headers,
+                params={"page_size": 50, "ordering": "-id"},
+            )
+            r.raise_for_status()
+            for doc in r.json().get("results", []):
+                if doc["id"] > max_id:
+                    return doc["id"]
+        raise RuntimeError("Test document did not appear after upload")
+
+
+# =============================================================================
 # Test Data Configuration
 # =============================================================================
 
@@ -360,6 +408,13 @@ async def main():
     print()
 
     async with MCPSession(MCP_URL, MCP_HEADERS) as session:
+        # ==================================================================
+        # Prep Phase: Create a disposable test document
+        # ==================================================================
+        log("\n=== Prep Phase: Create Disposable Test Document ===")
+        test_doc_id = await prep_create_test_document(API_KEY)
+        log(f"  Created test document ID: {test_doc_id}")
+
         # ==================================================================
         # Phase 0: Session Init & Tool Discovery
         # ==================================================================
@@ -453,131 +508,125 @@ async def main():
             store_key="all_documents"
         )
 
-        docs_list = get_list_items(store.get("all_documents", {}))
-        doc_id = docs_list[0]["id"] if docs_list else None
-        if doc_id:
-            store["doc_id"] = {"id": doc_id}
+        doc_id = test_doc_id
 
-        if doc_id:
-            await run_test(
-                session, "D2 get_document_by_id", "get_document_by_id",
-                {"id": doc_id}
-            )
-            await run_test(
-                session, "D3 get_document_metadata", "get_document_metadata",
-                {"id": doc_id}
-            )
-            await run_test(
-                session, "D4 get_document_suggestions",
-                "get_document_suggestions", {"id": doc_id}
-            )
-            await run_test(
-                session, "D5 get_document_ai_suggestions",
-                "get_document_ai_suggestions", {"id": doc_id}
-            )
-            await run_test(
-                session, "D6 get_document_notes", "get_document_notes",
-                {"id": doc_id}
-            )
+        await run_test(
+            session, "D2 get_document_by_id", "get_document_by_id",
+            {"id": doc_id}
+        )
+        await run_test(
+            session, "D3 get_document_metadata", "get_document_metadata",
+            {"id": doc_id}
+        )
+        await run_test(
+            session, "D4 get_document_suggestions",
+            "get_document_suggestions", {"id": doc_id}
+        )
+        await run_test(
+            session, "D5 get_document_ai_suggestions",
+            "get_document_ai_suggestions", {"id": doc_id}
+        )
+        await run_test(
+            session, "D6 get_document_notes", "get_document_notes",
+            {"id": doc_id}
+        )
 
-            await run_test_with_store(
-                session, "D7 create_document_note", "create_document_note",
-                {"document_id": doc_id, "note": f"Test note {rid}"},
-                store_key="created_note"
-            )
+        await run_test_with_store(
+            session, "D7 create_document_note", "create_document_note",
+            {"document_id": doc_id, "note": f"Test note {rid}"},
+            store_key="created_note"
+        )
 
-            note_id = pick_id("created_note")
-            if note_id:
-                await run_test(
-                    session, "D8 delete_document_note",
-                    "delete_document_note",
-                    {"document_id": doc_id, "note_id": note_id}
-                )
-
+        note_id = pick_id("created_note")
+        if note_id:
             await run_test(
-                session, "D9 update_document", "update_document",
-                {"id": doc_id, "title": f"Test title {rid}"}
+                session, "D8 delete_document_note",
+                "delete_document_note",
+                {"document_id": doc_id, "note_id": note_id}
             )
 
-            # URL tools (construct URLs from PAPERLESS_PUBLIC_URL or PAPERLESS_BASE_URL)
+        await run_test(
+            session, "D9 update_document", "update_document",
+            {"id": doc_id, "title": f"Test title {rid}"}
+        )
+
+        # URL tools (construct URLs from PAPERLESS_PUBLIC_URL or PAPERLESS_BASE_URL)
+        await run_test(
+            session, "D13 get_document_download_url",
+            "get_document_download_url", {"id": doc_id}
+        )
+        await run_test(
+            session, "D14 get_document_preview_url",
+            "get_document_preview_url", {"id": doc_id}
+        )
+        await run_test(
+            session, "D15 get_document_thumbnail_url",
+            "get_document_thumbnail_url", {"id": doc_id}
+        )
+
+        # Bulk update, reprocess, and assign custom field tests
+        await run_test(
+            session, "D16 bulk_update_documents", "bulk_update_documents",
+            {"documents": str(doc_id), "method": "set_correspondent",
+             "parameters": '{"correspondent": null}'}
+        )
+        await run_test(
+            session, "D17 reprocess_documents", "reprocess_documents",
+            {"documents": str(doc_id)}
+        )
+        # Create a temp custom field for the assign test, then clean it up
+        await run_test_with_store(
+            session, "D18 create_temp_field", "create_custom_field",
+            {"name": f"t{rid}-AssignField", "data_type": "string"},
+            store_key="temp_field"
+        )
+        temp_field_id = pick_id("temp_field")
+        if temp_field_id:
             await run_test(
-                session, "D13 get_document_download_url",
-                "get_document_download_url", {"id": doc_id}
+                session, "D19 assign_custom_field", "assign_custom_field",
+                {"documents": str(doc_id), "field_id": temp_field_id, "value": "test-value"}
             )
             await run_test(
-                session, "D14 get_document_preview_url",
-                "get_document_preview_url", {"id": doc_id}
+                session, "D20 remove_custom_field", "assign_custom_field",
+                {"documents": str(doc_id), "field_id": temp_field_id, "remove": True}
             )
             await run_test(
-                session, "D15 get_document_thumbnail_url",
-                "get_document_thumbnail_url", {"id": doc_id}
+                session, "D21 delete_temp_field", "delete_custom_field_by_id",
+                {"id": temp_field_id}
             )
 
-            # Bulk update, reprocess, and assign custom field tests
+        # Share link tests run here while the document still exists
+        await run_test(
+            session, "F1b get_all_documents_for_share", "get_all_documents"
+        )
+        expiration = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
+            "%Y-%m-%dT%H:%M:%S+00:00"
+        )
+        await run_test_with_store(
+            session, "F2 create_share_link", "create_share_link",
+            {"document": doc_id, "expiration": expiration},
+            store_key="created_share_link"
+        )
+        share_id = pick_id("created_share_link")
+        if share_id:
             await run_test(
-                session, "D16 bulk_update_documents", "bulk_update_documents",
-                {"documents": str(doc_id), "method": "set_correspondent",
-                 "parameters": '{"correspondent": null}'}
+                session, "F3 get_share_link_by_id", "get_share_link_by_id",
+                {"id": share_id}
             )
             await run_test(
-                session, "D17 reprocess_documents", "reprocess_documents",
-                {"documents": str(doc_id)}
-            )
-            # Create a temp custom field for the assign test, then clean it up
-            await run_test_with_store(
-                session, "D18 create_temp_field", "create_custom_field",
-                {"name": f"t{rid}-AssignField", "data_type": "string"},
-                store_key="temp_field"
-            )
-            temp_field_id = pick_id("temp_field")
-            if temp_field_id:
-                await run_test(
-                    session, "D19 assign_custom_field", "assign_custom_field",
-                    {"documents": str(doc_id), "field_id": temp_field_id, "value": "test-value"}
-                )
-                await run_test(
-                    session, "D20 remove_custom_field", "assign_custom_field",
-                    {"documents": str(doc_id), "field_id": temp_field_id, "remove": True}
-                )
-                await run_test(
-                    session, "D21 delete_temp_field", "delete_custom_field_by_id",
-                    {"id": temp_field_id}
-                )
-
-            # Share link tests run here while the document still exists
-            await run_test(
-                session, "F1b get_all_documents_for_share", "get_all_documents"
-            )
-            expiration = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
-                "%Y-%m-%dT%H:%M:%S+00:00"
-            )
-            await run_test_with_store(
-                session, "F2 create_share_link", "create_share_link",
-                {"document": doc_id, "expiration": expiration},
-                store_key="created_share_link"
-            )
-            share_id = pick_id("created_share_link")
-            if share_id:
-                await run_test(
-                    session, "F3 get_share_link_by_id", "get_share_link_by_id",
-                    {"id": share_id}
-                )
-                await run_test(
-                    session, "F4 delete_share_link_by_id",
-                    "delete_share_link_by_id", {"id": share_id}
-                )
-
-            await run_test(
-                session, "D10 delete_document_by_id",
-                "delete_document_by_id", {"id": doc_id}
+                session, "F4 delete_share_link_by_id",
+                "delete_share_link_by_id", {"id": share_id}
             )
 
-            await run_verify_delete(
-                session, "D11 verify_delete_document",
-                "get_document_by_id", {"id": doc_id}
-            )
-        else:
-            log("  WARN: No documents found in Paperless — skipping document tests")
+        await run_test(
+            session, "D10 delete_document_by_id",
+            "delete_document_by_id", {"id": doc_id}
+        )
+
+        await run_verify_delete(
+            session, "D11 verify_delete_document",
+            "get_document_by_id", {"id": doc_id}
+        )
 
         await run_test(
             session, "D12 get_next_asn", "get_next_asn"
@@ -686,5 +735,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())

@@ -279,7 +279,7 @@ class UpdateMailRuleParam(BaseModel):
 async def get_all_documents(
     include_all_fields: bool = False,
     page: int = 1,
-    page_size: int = 100,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all documents.
@@ -287,7 +287,7 @@ async def get_all_documents(
     Args:
         include_all_fields: When False (default), each document contains only commonly used fields. Set to True to include all fields.
         page: Page number for paginated results. Defaults to 1.
-        page_size: Number of results per page. Defaults to 100.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_documents(
         get_user_token(),
@@ -610,16 +610,19 @@ async def delete_document_note(
 @mcp.tool()
 async def get_all_correspondents(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all correspondents.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_correspondents(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"correspondents": json_to_toon(data)}
 
@@ -715,16 +718,19 @@ async def delete_correspondent_by_id(
 @mcp.tool()
 async def get_all_document_types(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all document types.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_document_types(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"document_types": json_to_toon(data)}
 
@@ -820,16 +826,19 @@ async def delete_document_type_by_id(
 @mcp.tool()
 async def get_all_tags(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all tags.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_tags(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"tags": json_to_toon(data)}
 
@@ -939,16 +948,19 @@ async def delete_tag_by_id(
 @mcp.tool()
 async def get_all_storage_paths(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all storage paths.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_storage_paths(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"storage_paths": json_to_toon(data)}
 
@@ -1048,16 +1060,19 @@ async def delete_storage_path_by_id(
 @mcp.tool()
 async def get_all_saved_views(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all saved views.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_saved_views(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"saved_views": json_to_toon(data)}
 
@@ -1167,16 +1182,19 @@ async def delete_saved_view_by_id(
 @mcp.tool()
 async def get_all_custom_fields(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all custom fields.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_custom_fields(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"custom_fields": json_to_toon(data)}
 
@@ -1264,16 +1282,19 @@ async def delete_custom_field_by_id(
 @mcp.tool()
 async def get_all_tasks(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all tasks.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_tasks(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"tasks": json_to_toon(data)}
 
@@ -1346,16 +1367,19 @@ async def acknowledge_tasks(
 @mcp.tool()
 async def get_all_share_links(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all share links.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_share_links(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"share_links": json_to_toon(data)}
 
@@ -1417,16 +1441,19 @@ async def delete_share_link_by_id(
 @mcp.tool()
 async def get_all_workflows(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all workflows.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_workflows(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"workflows": json_to_toon(data)}
 
@@ -1536,16 +1563,19 @@ async def delete_workflow_by_id(
 @mcp.tool()
 async def get_all_mail_accounts(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all mail accounts.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_mail_accounts(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"mail_accounts": json_to_toon(data)}
 
@@ -1661,16 +1691,19 @@ async def delete_mail_account_by_id(
 @mcp.tool()
 async def get_all_mail_rules(
     include_all_fields: bool = False,
+    page_size: int = 500,
     ctx: Context = None
 ) -> dict[str, Any]:
     """List all mail rules.
 
     Args:
         include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
+        page_size: Number of results per page. Defaults to 500.
     """
     data = await get_client().get_all_mail_rules(
         get_user_token(),
-        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False
+        include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
+        page_size=page_size,
     )
     return {"mail_rules": json_to_toon(data)}
 
