@@ -340,7 +340,7 @@ class CustomFieldExtraData(BaseModel):
 # Document Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_documents(
     include_all_fields: bool = False,
     page: int = 1,
@@ -363,7 +363,7 @@ async def get_all_documents(
     return {"documents": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -378,7 +378,7 @@ async def get_document_by_id(
     return await get_client().get_document_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_document(
     id: int,
     title: Optional[str] = None,
@@ -421,7 +421,7 @@ async def update_document(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_document_by_id(
     id: int,
     ctx: Context = None
@@ -434,7 +434,7 @@ async def delete_document_by_id(
     return await get_client().delete_document_by_id(id, get_user_token())
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_metadata(
     id: int,
     ctx: Context = None
@@ -447,7 +447,7 @@ async def get_document_metadata(
     return await get_client().get_document_metadata(id, get_user_token())
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_suggestions(
     id: int,
     ctx: Context = None
@@ -460,7 +460,7 @@ async def get_document_suggestions(
     return await get_client().get_document_suggestions(id, get_user_token())
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_document_ai_suggestions(
     id: int,
     ctx: Context = None
@@ -473,14 +473,14 @@ async def get_document_ai_suggestions(
     return await get_client().get_document_ai_suggestions(id, get_user_token())
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_next_asn(ctx: Context = None) -> dict[str, Any]:
     """Get the next available Archive Serial Number."""
     data = await get_client().get_next_asn(get_user_token())
     return {"next_asn": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_download_url(
     id: int,
     ctx: Context = None
@@ -494,7 +494,7 @@ async def get_document_download_url(
     return {"download_url": f"{public_url}/api/documents/{id}/download/"}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_preview_url(
     id: int,
     ctx: Context = None
@@ -508,7 +508,7 @@ async def get_document_preview_url(
     return {"preview_url": f"{public_url}/api/documents/{id}/preview/"}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_document_thumbnail_url(
     id: int,
     ctx: Context = None
@@ -522,7 +522,7 @@ async def get_document_thumbnail_url(
     return {"thumbnail_url": f"{public_url}/api/documents/{id}/thumb/"}
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def bulk_update_documents(
     documents: list[int],
     method: str,
@@ -554,7 +554,7 @@ async def bulk_update_documents(
     return {"result": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def reprocess_documents(
     documents: list[int] = [],
     all: bool = False,
@@ -580,7 +580,7 @@ async def reprocess_documents(
     return {"result": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def assign_custom_field(
     documents: list[int],
     field_id: int,
@@ -610,7 +610,7 @@ async def assign_custom_field(
     return {"result": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_notes(
     id: int,
     ctx: Context = None
@@ -624,7 +624,7 @@ async def get_document_notes(
     return {"notes": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_document_note(
     document_id: int,
     note: str,
@@ -643,7 +643,7 @@ async def create_document_note(
     return {"note": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_document_note(
     document_id: int,
     note_id: int,
@@ -663,7 +663,7 @@ async def delete_document_note(
 # Correspondent Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_correspondents(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -683,7 +683,7 @@ async def get_all_correspondents(
     return {"correspondents": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_correspondent_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -698,7 +698,7 @@ async def get_correspondent_by_id(
     return await get_client().get_correspondent_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_correspondent(
     name: str,
     matching_algorithm: int = 1,
@@ -727,7 +727,7 @@ async def create_correspondent(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_correspondent(
     id: int,
     name: Optional[str] = None,
@@ -758,7 +758,7 @@ async def update_correspondent(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_correspondent_by_id(
     id: int,
     ctx: Context = None
@@ -775,7 +775,7 @@ async def delete_correspondent_by_id(
 # Document Type Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_document_types(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -795,7 +795,7 @@ async def get_all_document_types(
     return {"document_types": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_document_type_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -810,7 +810,7 @@ async def get_document_type_by_id(
     return await get_client().get_document_type_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_document_type(
     name: str,
     matching_algorithm: int = 1,
@@ -839,7 +839,7 @@ async def create_document_type(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_document_type(
     id: int,
     name: Optional[str] = None,
@@ -870,7 +870,7 @@ async def update_document_type(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_document_type_by_id(
     id: int,
     ctx: Context = None
@@ -887,7 +887,7 @@ async def delete_document_type_by_id(
 # Tag Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_tags(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -907,7 +907,7 @@ async def get_all_tags(
     return {"tags": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_tag_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -922,7 +922,7 @@ async def get_tag_by_id(
     return await get_client().get_tag_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_tag(
     name: str,
     color: str = "#a6cee3",
@@ -958,7 +958,7 @@ async def create_tag(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_tag(
     id: int,
     name: Optional[str] = None,
@@ -996,7 +996,7 @@ async def update_tag(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_tag_by_id(
     id: int,
     ctx: Context = None
@@ -1013,7 +1013,7 @@ async def delete_tag_by_id(
 # Storage Path Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_storage_paths(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1033,7 +1033,7 @@ async def get_all_storage_paths(
     return {"storage_paths": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_storage_path_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1048,7 +1048,7 @@ async def get_storage_path_by_id(
     return await get_client().get_storage_path_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_storage_path(
     name: str,
     path: str,
@@ -1079,7 +1079,7 @@ async def create_storage_path(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_storage_path(
     id: int,
     name: Optional[str] = None,
@@ -1112,7 +1112,7 @@ async def update_storage_path(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_storage_path_by_id(
     id: int,
     ctx: Context = None
@@ -1129,7 +1129,7 @@ async def delete_storage_path_by_id(
 # Saved View Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_all_saved_views(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1149,7 +1149,7 @@ async def get_all_saved_views(
     return {"saved_views": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_saved_view_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1164,7 +1164,7 @@ async def get_saved_view_by_id(
     return await get_client().get_saved_view_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def create_saved_view(
     name: str,
     show_on_dashboard: bool = False,
@@ -1198,7 +1198,7 @@ async def create_saved_view(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def update_saved_view(
     id: int,
     name: Optional[str] = None,
@@ -1234,7 +1234,7 @@ async def update_saved_view(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def delete_saved_view_by_id(
     id: int,
     ctx: Context = None
@@ -1251,7 +1251,7 @@ async def delete_saved_view_by_id(
 # Custom Field Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_all_custom_fields(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1271,7 +1271,7 @@ async def get_all_custom_fields(
     return {"custom_fields": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_custom_field_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1286,7 +1286,7 @@ async def get_custom_field_by_id(
     return await get_client().get_custom_field_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def create_custom_field(
     name: str,
     data_type: str,
@@ -1308,7 +1308,7 @@ async def create_custom_field(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def update_custom_field(
     id: int,
     name: Optional[str] = None,
@@ -1334,7 +1334,7 @@ async def update_custom_field(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def delete_custom_field_by_id(
     id: int,
     ctx: Context = None
@@ -1351,7 +1351,7 @@ async def delete_custom_field_by_id(
 # Task Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_tasks(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1371,7 +1371,7 @@ async def get_all_tasks(
     return {"tasks": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_task_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1386,7 +1386,7 @@ async def get_task_by_id(
     return await get_client().get_task_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_task_summary(
     days: int = 30,
     ctx: Context = None
@@ -1400,20 +1400,20 @@ async def get_task_summary(
     return {"summary": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_task_status_counts(ctx: Context = None) -> dict[str, Any]:
     """Get counts of tasks by status."""
     return await get_client().get_task_status_counts(get_user_token())
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_active_tasks(ctx: Context = None) -> dict[str, Any]:
     """Get currently pending or running tasks."""
     data = await get_client().get_active_tasks(get_user_token())
     return {"active_tasks": data}
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def acknowledge_tasks(
     tasks: Optional[list[int]] = None,
     all_tasks: Optional[bool] = None,
@@ -1435,7 +1435,7 @@ async def acknowledge_tasks(
 # Share Link Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_all_share_links(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1455,7 +1455,7 @@ async def get_all_share_links(
     return {"share_links": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "advanced", "paperless"})
 async def get_share_link_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1470,7 +1470,7 @@ async def get_share_link_by_id(
     return await get_client().get_share_link_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def create_share_link(
     document: int,
     expiration: str,
@@ -1493,7 +1493,7 @@ async def create_share_link(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "advanced", "paperless"})
 async def delete_share_link_by_id(
     id: int,
     ctx: Context = None
@@ -1510,7 +1510,7 @@ async def delete_share_link_by_id(
 # Workflow Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_workflows(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1530,7 +1530,7 @@ async def get_all_workflows(
     return {"workflows": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_workflow_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1545,7 +1545,7 @@ async def get_workflow_by_id(
     return await get_client().get_workflow_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_workflow(
     name: str,
     triggers: list[WorkflowTrigger] = [WorkflowTrigger()],
@@ -1577,7 +1577,7 @@ async def create_workflow(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_workflow(
     id: int,
     name: Optional[str] = None,
@@ -1613,7 +1613,7 @@ async def update_workflow(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_workflow_by_id(
     id: int,
     ctx: Context = None
@@ -1630,7 +1630,7 @@ async def delete_workflow_by_id(
 # Mail Account Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_mail_accounts(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1650,7 +1650,7 @@ async def get_all_mail_accounts(
     return {"mail_accounts": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_mail_account_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1665,7 +1665,7 @@ async def get_mail_account_by_id(
     return await get_client().get_mail_account_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_mail_account(
     name: str,
     username: str,
@@ -1704,7 +1704,7 @@ async def create_mail_account(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_mail_account(
     id: int,
     name: Optional[str] = None,
@@ -1745,7 +1745,7 @@ async def update_mail_account(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_mail_account_by_id(
     id: int,
     ctx: Context = None
@@ -1762,7 +1762,7 @@ async def delete_mail_account_by_id(
 # Mail Rule Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_all_mail_rules(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1782,7 +1782,7 @@ async def get_all_mail_rules(
     return {"mail_rules": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "primary", "paperless"})
 async def get_mail_rule_by_id(
     id: int,
     include_all_fields: bool = False,
@@ -1797,7 +1797,7 @@ async def get_mail_rule_by_id(
     return await get_client().get_mail_rule_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def create_mail_rule(
     name: str,
     account: int,
@@ -1858,7 +1858,7 @@ async def create_mail_rule(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def update_mail_rule(
     id: int,
     name: Optional[str] = None,
@@ -1921,7 +1921,7 @@ async def update_mail_rule(
     )
 
 
-@mcp.tool()
+@mcp.tool(tags={"write", "primary", "paperless"})
 async def delete_mail_rule_by_id(
     id: int,
     ctx: Context = None
@@ -1938,7 +1938,7 @@ async def delete_mail_rule_by_id(
 # Search Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "basic", "paperless"})
 async def search_documents(
     query: str,
     limit: int = 50,
@@ -1956,7 +1956,7 @@ async def search_documents(
     return {"results": json_to_toon(data)}
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "basic", "paperless"})
 async def search_autocomplete(
     term: str,
     limit: int = 10,
@@ -1976,13 +1976,13 @@ async def search_autocomplete(
 # System Tools
 # =============================================================================
 
-@mcp.tool()
+@mcp.tool(tags={"read", "basic", "paperless"})
 async def get_statistics(ctx: Context = None) -> dict[str, Any]:
     """Get document and statistics counts for the current user."""
     return await get_client().get_statistics(get_user_token())
 
 
-@mcp.tool()
+@mcp.tool(tags={"read", "basic", "paperless"})
 async def check_server_status(ctx: Context = None) -> dict[str, Any]:
     """Check connectivity and status of the Paperless backend."""
     try:
