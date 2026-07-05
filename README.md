@@ -2,9 +2,7 @@
 
 This repository contains a Model Context Protocol (MCP) server that acts
 as a secure, multi-tenant proxy between an AI Assistant and the
-Paperless backend API. It exposes **76 MCP tools** covering
-**13 resource domains** with full CRUD, search, URL generation, bulk editing, and system operations.
-**147 automated tests** covering all tool domains.
+Paperless backend API. It exposes **76 MCP tools** covering **13 resource domains** with full CRUD, search, URL generation, bulk editing, and system operations.
 
 ## ✨ Features
 
