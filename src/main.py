@@ -19,6 +19,19 @@ _IMAP_SECURITY_MAP = {"none": 1, "ssl_tls": 2, "starttls": 3}
 _MAIL_RULE_ACTION_MAP = {"delete": 1, "mark_read": 2, "flag": 3, "move": 4, "copy": 5}
 _WORKFLOW_ACTION_MAP = {"assign": 1, "remove": 2, "email": 3, "webhook": 4, "remove_password": 5, "trash": 6}
 _WORKFLOW_TRIGGER_MAP = {"consumption_started": 1, "document_added": 2, "document_updated": 3, "scheduled": 4}
+_MATCHING_ALGO_MAP = {"none": 0, "any_word": 1, "all_words": 2, "exact": 3, "regex": 4, "fuzzy": 5, "automatic": 6}
+_FILTER_RULE_MAP = {
+    "title_contains": 0, "content_contains": 1, "asn_is": 2,
+    "correspondent_is": 3, "document_type_is": 4, "is_in_inbox": 5,
+    "has_tag": 6, "has_any_tag": 7, "created_before": 8,
+    "created_after": 9, "created_year_is": 10, "created_month_is": 11,
+    "created_day_is": 12, "added_before": 13, "added_after": 14,
+    "modified_before": 15, "modified_after": 16,
+    "does_not_have_tag": 17, "does_not_have_asn": 18,
+    "title_or_content_contains": 19, "fulltext_query": 20,
+    "has_tags_in": 22, "storage_path_is": 25,
+    "owner_is": 32, "has_custom_field_value": 36,
+}
 
 
 class AuthMiddleware:
@@ -284,9 +297,9 @@ class WorkflowTrigger(BaseModel):
 
 class FilterRule(BaseModel):
     """A filter rule for a saved view."""
-    rule_type: int = Field(description="Filter rule type ID.")
-    value: str = Field(description="Value to filter by.")
-    type: str = Field(default="", description="Rule type identifier string.")
+    rule_type: str = Field(description="title_contains, content_contains, correspondent_is, document_type_is, has_tag, created_before, created_after, added_before, added_after, storage_path_is, owner_is, or fulltext_query.")
+    value: str = Field(description="Value to filter by, e.g. \"my title\", \"5\", or \"2026-01-15\".")
+    type: str = Field(default="", description="Rule type identifier string, e.g. \"title\" or \"\". Usually leave empty.")
 
 
 class BulkEditParams(BaseModel):
@@ -522,7 +535,7 @@ async def bulk_update_documents(
     Args:
         documents: Document IDs to update.
         method: set_correspondent, set_document_type, set_storage_path, add_tag, remove_tag, modify_tags, modify_custom_fields, or delete.
-        parameters: Method-specific parameters.
+        parameters: Method-specific params, e.g. {"correspondent": 5} for set_correspondent or {"tag": 10} for add_tag.
         all: Apply to all documents matching filters instead of the documents list.
         filters: Filter criteria for bulk operations.
     """
@@ -579,7 +592,7 @@ async def assign_custom_field(
     Args:
         documents: Document IDs to update.
         field_id: ID of the custom field definition.
-        value: Value to assign to the custom field.
+        value: Value to assign as a string, e.g. "true", "2026-01-15", "42".
         remove: Remove the custom field from the documents instead of assigning a value.
     """
     doc_ids = documents
@@ -697,13 +710,14 @@ async def create_correspondent(
 
     Args:
         name: Name of the correspondent.
-        matching_algorithm: Matching algorithm ID.
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateCorrespondentParam(
-        name=name, matching_algorithm=matching_algorithm,
+        name=name, matching_algorithm=matching_algo_int,
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().create_correspondent(
@@ -726,13 +740,14 @@ async def update_correspondent(
     Args:
         id: ID of the correspondent.
         name: Name of the correspondent.
-        matching_algorithm: Matching algorithm ID.
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateCorrespondentParam(
-        id=id, name=name, matching_algorithm=matching_algorithm,
+        id=id,         name=name, matching_algorithm=matching_algo_int,
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().update_correspondent(
@@ -805,13 +820,14 @@ async def create_document_type(
 
     Args:
         name: Name of the document type.
-        matching_algorithm: Matching algorithm ID.
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateDocumentTypeParam(
-        name=name, matching_algorithm=matching_algorithm,
+        name=name, matching_algorithm=matching_algo_int,
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().create_document_type(
@@ -834,13 +850,14 @@ async def update_document_type(
     Args:
         id: ID of the document type.
         name: Name of the document type.
-        matching_algorithm: Matching algorithm ID.
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateDocumentTypeParam(
-        id=id, name=name, matching_algorithm=matching_algorithm,
+        id=id,         name=name, matching_algorithm=matching_algo_int,
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().update_document_type(
@@ -916,17 +933,18 @@ async def create_tag(
 
     Args:
         name: Name of the tag.
-        color: Hex color code.
+        color: Hex color code, e.g. "#a6cee3".
         is_inbox_tag: Inbox tag.
-        matching_algorithm: Matching algorithm ID.
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         parent: Parent tag ID.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateTagParam(
         name=name, color=color, is_inbox_tag=is_inbox_tag,
-        matching_algorithm=matching_algorithm, is_insensitive=is_insensitive,
+        matching_algorithm=matching_algo_int, is_insensitive=is_insensitive,
         match=match, parent=parent, owner=owner,
     )
     return await get_client().create_tag(
@@ -952,17 +970,18 @@ async def update_tag(
     Args:
         id: ID of the tag.
         name: Name of the tag.
-        color: Hex color code.
+        color: Hex color code, e.g. "#a6cee3".
         is_inbox_tag: Inbox tag.
-        matching_algorithm: Matching algorithm ID.
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         parent: Parent tag ID.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateTagParam(
         id=id, name=name, color=color, is_inbox_tag=is_inbox_tag,
-        matching_algorithm=matching_algorithm, is_insensitive=is_insensitive,
+        matching_algorithm=matching_algo_int, is_insensitive=is_insensitive,
         match=match, parent=parent, owner=owner,
     )
     return await get_client().update_tag(
@@ -1036,14 +1055,15 @@ async def create_storage_path(
 
     Args:
         name: Name of the storage path.
-        path: The storage path template.
-        matching_algorithm: Matching algorithm ID.
+        path: Storage path template, e.g. "{created_year}/{correspondent}/{title}".
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateStoragePathParam(
-        name=name, path=path, matching_algorithm=matching_algorithm,
+        name=name, path=path, matching_algorithm=matching_algo_int,
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().create_storage_path(
@@ -1067,14 +1087,15 @@ async def update_storage_path(
     Args:
         id: ID of the storage path.
         name: Name of the storage path.
-        path: Storage path template.
-        matching_algorithm: Matching algorithm ID.
+        path: Storage path template, e.g. "{created_year}/{correspondent}/{title}".
+        matching_algorithm: none, any_word, all_words, exact, regex, fuzzy, or automatic.
         is_insensitive: Case-insensitive matching.
-        match: Match pattern string.
+        match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
     """
+    matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateStoragePathParam(
-        id=id, name=name, path=path, matching_algorithm=matching_algorithm,
+        id=id, name=name, path=path, matching_algorithm=matching_algo_int,
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().update_storage_path(
@@ -1151,12 +1172,12 @@ async def create_saved_view(
         name: Name of the saved view.
         show_on_dashboard: Show on dashboard.
         show_in_sidebar: Show in sidebar.
-        sort_field: Field to sort by.
+        sort_field: created, added, modified, archive_serial_number, title, correspondent, document_type, storage_path, owner, page_count, or num_notes.
         sort_reverse: Reverse sort order.
-        filter_rules: Filter rules for the view.
+        filter_rules: List of filter rules, each with rule_type, value, and type.
         owner: Owner user ID.
     """
-    parsed_rules = [r.model_dump() for r in filter_rules]
+    parsed_rules = [{"rule_type": _FILTER_RULE_MAP.get(r.rule_type, r.rule_type), "value": r.value, "type": r.type} for r in filter_rules]
     params = CreateSavedViewParam(
         name=name, show_on_dashboard=show_on_dashboard,
         show_in_sidebar=show_in_sidebar, sort_field=sort_field,
@@ -1175,7 +1196,7 @@ async def update_saved_view(
     show_in_sidebar: Optional[bool] = None,
     sort_field: Optional[str] = None,
     sort_reverse: Optional[bool] = None,
-    filter_rules: Optional[str] = None,
+    filter_rules: Optional[list[FilterRule]] = None,
     owner: Optional[int] = None,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1186,12 +1207,12 @@ async def update_saved_view(
         name: Name of the saved view.
         show_on_dashboard: Show on dashboard.
         show_in_sidebar: Show in sidebar.
-        sort_field: Field to sort by.
+        sort_field: created, added, modified, archive_serial_number, title, correspondent, document_type, storage_path, owner, page_count, or num_notes.
         sort_reverse: Reverse sort order.
-        filter_rules: JSON string of filter rules.
+        filter_rules: List of filter rules, each with rule_type, value, and type.
         owner: Owner user ID.
     """
-    parsed_rules = json.loads(filter_rules) if filter_rules else None
+    parsed_rules = [{"rule_type": _FILTER_RULE_MAP.get(r.rule_type, r.rule_type), "value": r.value, "type": r.type} for r in filter_rules] if filter_rules else None
     params = UpdateSavedViewParam(
         id=id, name=name, show_on_dashboard=show_on_dashboard,
         show_in_sidebar=show_in_sidebar, sort_field=sort_field,
@@ -1266,7 +1287,7 @@ async def create_custom_field(
     Args:
         name: Name of the custom field.
         data_type: string, url, date, boolean, integer, float, monetary, documentlink, select, or longtext.
-        extra_data: Extra configuration for the field.
+        extra_data: JSON string with extra config, e.g. {"options": ["opt1", "opt2"]} for select or {"currency": "USD"} for monetary.
     """
     parsed_extra = json.loads(extra_data)
     params = CreateCustomFieldParam(name=name, data_type=data_type, extra_data=parsed_extra)
@@ -1289,7 +1310,7 @@ async def update_custom_field(
         id: ID of the custom field.
         name: Name of the custom field.
         data_type: string, url, date, boolean, integer, float, monetary, documentlink, select, or longtext.
-        extra_data: Extra configuration for the field.
+        extra_data: JSON string with extra config, e.g. {"options": ["opt1", "opt2"]} for select or {"currency": "USD"} for monetary.
     """
     parsed_extra = json.loads(extra_data) if extra_data else None
     params = UpdateCustomFieldParam(
@@ -1523,7 +1544,7 @@ async def create_workflow(
 
     Args:
         name: Name of the workflow.
-        triggers: Trigger definitions.
+        triggers: List of triggers, each with type and filter_path.
         actions: assign, remove, email, webhook, remove_password, or trash.
         order: Display order.
         enabled: Workflow is enabled.
@@ -1556,7 +1577,7 @@ async def update_workflow(
     Args:
         id: ID of the workflow.
         name: Name of the workflow.
-        triggers: Trigger definitions.
+        triggers: List of triggers, each with type and filter_path.
         actions: assign, remove, email, webhook, remove_password, or trash.
         order: Display order.
         enabled: Workflow is enabled.
@@ -1650,7 +1671,7 @@ async def create_mail_account(
         imap_server: IMAP server hostname.
         imap_port: IMAP server port.
         imap_security: none, ssl_tls, or starttls.
-        character_set: Character set.
+        character_set: IMAP character set, e.g. "UTF-8".
         folder: Mail folder to monitor.
         is_active: Account is active.
     """
@@ -1690,7 +1711,7 @@ async def update_mail_account(
         imap_server: IMAP server hostname.
         imap_port: IMAP server port.
         imap_security: none, ssl_tls, or starttls.
-        character_set: Character set.
+        character_set: IMAP character set, e.g. "UTF-8".
         folder: Mail folder.
         is_active: Account is active.
     """
@@ -1785,14 +1806,14 @@ async def create_mail_rule(
         account: ID of the mail account.
         action: delete, mark_read, flag, move, or copy.
         folder: Folder to apply rule to.
-        filter_to: Filter by To address.
-        filter_from: Filter by From address.
-        filter_subject: Filter by subject.
-        filter_attachment_filename: Filter by attachment filename.
+        filter_to: Filter by To address. Use "*" for all.
+        filter_from: Filter by From address. Use "*" for all.
+        filter_subject: Filter by subject. Use "*" for all.
+        filter_attachment_filename: Filter by attachment filename. Use "*" for all.
         maximum_age: Maximum age of messages in days.
         order: Rule order.
         assign_title: Title template to assign.
-        assign_tags: Tag IDs to assign.
+        assign_tags: Comma-separated tag IDs, e.g. "1,2,3".
         assign_correspondent: Correspondent ID to assign.
         assign_document_type: Document type ID to assign.
         assign_storage_path: Storage path ID to assign.
@@ -1846,14 +1867,14 @@ async def update_mail_rule(
         account: Mail account ID.
         action: delete, mark_read, flag, move, or copy.
         folder: Folder to apply rule to.
-        filter_to: Filter by To address.
-        filter_from: Filter by From address.
-        filter_subject: Filter by subject.
-        filter_attachment_filename: Filter by attachment filename.
+        filter_to: Filter by To address. Use "*" for all.
+        filter_from: Filter by From address. Use "*" for all.
+        filter_subject: Filter by subject. Use "*" for all.
+        filter_attachment_filename: Filter by attachment filename. Use "*" for all.
         maximum_age: Maximum age of messages in days.
         order: Rule order.
         assign_title: Title template to assign.
-        assign_tags: Tag IDs to assign.
+        assign_tags: Comma-separated tag IDs, e.g. "1,2,3".
         assign_correspondent: Correspondent ID to assign.
         assign_document_type: Document type ID to assign.
         assign_storage_path: Storage path ID to assign.
