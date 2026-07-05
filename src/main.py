@@ -391,6 +391,7 @@ async def update_document(
     archive_serial_number: Optional[int] = None,
     owner: Optional[int] = None,
     remove_inbox_tags: Optional[bool] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update a document's metadata.
@@ -407,6 +408,7 @@ async def update_document(
         archive_serial_number: Archive serial number to assign. 0 to unset.
         owner: Owner user ID to assign.
         remove_inbox_tags: Remove inbox tags when setting new tags.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     params = UpdateDocumentParam(
         id=id, title=title, content=content,
@@ -416,7 +418,8 @@ async def update_document(
         owner=owner, remove_inbox_tags=remove_inbox_tags,
     )
     return await get_client().update_document(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -704,6 +707,7 @@ async def create_correspondent(
     is_insensitive: bool = True,
     match: str = "",
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new correspondent.
@@ -714,6 +718,7 @@ async def create_correspondent(
         is_insensitive: Case-insensitive matching.
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateCorrespondentParam(
@@ -721,7 +726,8 @@ async def create_correspondent(
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().create_correspondent(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -733,6 +739,7 @@ async def update_correspondent(
     is_insensitive: Optional[bool] = None,
     match: Optional[str] = None,
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing correspondent.
@@ -744,6 +751,7 @@ async def update_correspondent(
         is_insensitive: Case-insensitive matching.
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateCorrespondentParam(
@@ -751,7 +759,8 @@ async def update_correspondent(
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().update_correspondent(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -814,6 +823,7 @@ async def create_document_type(
     is_insensitive: bool = True,
     match: str = "",
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new document type.
@@ -824,6 +834,7 @@ async def create_document_type(
         is_insensitive: Case-insensitive matching.
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateDocumentTypeParam(
@@ -831,7 +842,8 @@ async def create_document_type(
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().create_document_type(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -843,6 +855,7 @@ async def update_document_type(
     is_insensitive: Optional[bool] = None,
     match: Optional[str] = None,
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing document type.
@@ -854,6 +867,7 @@ async def update_document_type(
         is_insensitive: Case-insensitive matching.
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateDocumentTypeParam(
@@ -861,7 +875,8 @@ async def update_document_type(
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().update_document_type(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -927,6 +942,7 @@ async def create_tag(
     match: str = "",
     parent: Optional[int] = None,
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new tag.
@@ -940,6 +956,7 @@ async def create_tag(
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         parent: Parent tag ID.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateTagParam(
@@ -948,7 +965,8 @@ async def create_tag(
         match=match, parent=parent, owner=owner,
     )
     return await get_client().create_tag(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -963,6 +981,7 @@ async def update_tag(
     match: Optional[str] = None,
     parent: Optional[int] = None,
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing tag.
@@ -977,6 +996,7 @@ async def update_tag(
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         parent: Parent tag ID.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateTagParam(
@@ -985,7 +1005,8 @@ async def update_tag(
         match=match, parent=parent, owner=owner,
     )
     return await get_client().update_tag(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1049,6 +1070,7 @@ async def create_storage_path(
     is_insensitive: bool = True,
     match: str = "",
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new storage path.
@@ -1060,6 +1082,7 @@ async def create_storage_path(
         is_insensitive: Case-insensitive matching.
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = CreateStoragePathParam(
@@ -1067,7 +1090,8 @@ async def create_storage_path(
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().create_storage_path(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1080,6 +1104,7 @@ async def update_storage_path(
     is_insensitive: Optional[bool] = None,
     match: Optional[str] = None,
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing storage path.
@@ -1092,6 +1117,7 @@ async def update_storage_path(
         is_insensitive: Case-insensitive matching.
         match: Pattern to match against. Used with matching_algorithm. Leave empty to disable.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     matching_algo_int = _MATCHING_ALGO_MAP.get(matching_algorithm, matching_algorithm)
     params = UpdateStoragePathParam(
@@ -1099,7 +1125,8 @@ async def update_storage_path(
         is_insensitive=is_insensitive, match=match, owner=owner,
     )
     return await get_client().update_storage_path(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1164,6 +1191,7 @@ async def create_saved_view(
     sort_reverse: bool = True,
     filter_rules: list[FilterRule] = [],
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new saved view.
@@ -1176,6 +1204,7 @@ async def create_saved_view(
         sort_reverse: Reverse sort order.
         filter_rules: List of filter rules, each with rule_type, value, and type.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     parsed_rules = [{"rule_type": _FILTER_RULE_MAP.get(r.rule_type, r.rule_type), "value": r.value, "type": r.type} for r in filter_rules]
     params = CreateSavedViewParam(
@@ -1184,7 +1213,8 @@ async def create_saved_view(
         sort_reverse=sort_reverse, filter_rules=parsed_rules, owner=owner,
     )
     return await get_client().create_saved_view(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1198,6 +1228,7 @@ async def update_saved_view(
     sort_reverse: Optional[bool] = None,
     filter_rules: Optional[list[FilterRule]] = None,
     owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing saved view.
@@ -1211,6 +1242,7 @@ async def update_saved_view(
         sort_reverse: Reverse sort order.
         filter_rules: List of filter rules, each with rule_type, value, and type.
         owner: Owner user ID.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     parsed_rules = [{"rule_type": _FILTER_RULE_MAP.get(r.rule_type, r.rule_type), "value": r.value, "type": r.type} for r in filter_rules] if filter_rules else None
     params = UpdateSavedViewParam(
@@ -1219,7 +1251,8 @@ async def update_saved_view(
         sort_reverse=sort_reverse, filter_rules=parsed_rules, owner=owner,
     )
     return await get_client().update_saved_view(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1280,6 +1313,7 @@ async def create_custom_field(
     name: str,
     data_type: str,
     extra_data: str = "{}",
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new custom field.
@@ -1288,11 +1322,13 @@ async def create_custom_field(
         name: Name of the custom field.
         data_type: string, url, date, boolean, integer, float, monetary, documentlink, select, or longtext.
         extra_data: JSON string with extra config, e.g. {"options": ["opt1", "opt2"]} for select or {"currency": "USD"} for monetary.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     parsed_extra = json.loads(extra_data)
     params = CreateCustomFieldParam(name=name, data_type=data_type, extra_data=parsed_extra)
     return await get_client().create_custom_field(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1302,6 +1338,7 @@ async def update_custom_field(
     name: Optional[str] = None,
     data_type: Optional[str] = None,
     extra_data: Optional[str] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing custom field.
@@ -1311,13 +1348,15 @@ async def update_custom_field(
         name: Name of the custom field.
         data_type: string, url, date, boolean, integer, float, monetary, documentlink, select, or longtext.
         extra_data: JSON string with extra config, e.g. {"options": ["opt1", "opt2"]} for select or {"currency": "USD"} for monetary.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     parsed_extra = json.loads(extra_data) if extra_data else None
     params = UpdateCustomFieldParam(
         id=id, name=name, data_type=data_type, extra_data=parsed_extra,
     )
     return await get_client().update_custom_field(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1462,6 +1501,7 @@ async def create_share_link(
     document: int,
     expiration: str,
     file_version: str = "archive",
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new share link.
@@ -1470,12 +1510,14 @@ async def create_share_link(
         document: ID of the document to share.
         expiration: ISO 8601 format (2026-06-22T15:00:00-04:00).
         file_version: archive or original.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     params = CreateShareLinkParam(
         document=document, expiration=expiration, file_version=file_version,
     )
     return await get_client().create_share_link(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1538,6 +1580,7 @@ async def create_workflow(
     actions: list[str] = ["assign"],
     order: int = 1,
     enabled: bool = True,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new workflow.
@@ -1548,6 +1591,7 @@ async def create_workflow(
         actions: assign, remove, email, webhook, remove_password, or trash.
         order: Display order.
         enabled: Workflow is enabled.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     parsed_triggers = [{"type": _WORKFLOW_TRIGGER_MAP.get(t.type, t.type), "filter_path": t.filter_path} for t in triggers]
     parsed_actions = [{"type": _WORKFLOW_ACTION_MAP.get(a, a)} for a in actions]
@@ -1558,7 +1602,8 @@ async def create_workflow(
     payload["triggers"] = parsed_triggers
     payload["actions"] = parsed_actions
     return await get_client().create_workflow(
-        payload, get_user_token()
+        payload, get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1570,6 +1615,7 @@ async def update_workflow(
     actions: Optional[list[str]] = None,
     order: Optional[int] = None,
     enabled: Optional[bool] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing workflow.
@@ -1581,6 +1627,7 @@ async def update_workflow(
         actions: assign, remove, email, webhook, remove_password, or trash.
         order: Display order.
         enabled: Workflow is enabled.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     parsed_triggers = [{"type": _WORKFLOW_TRIGGER_MAP.get(t.type, t.type), "filter_path": t.filter_path} for t in triggers] if triggers else None
     parsed_actions = [{"type": _WORKFLOW_ACTION_MAP.get(a, a)} for a in actions] if actions else None
@@ -1593,7 +1640,8 @@ async def update_workflow(
     if parsed_actions is not None:
         payload["actions"] = parsed_actions
     return await get_client().update_workflow(
-        id, payload, get_user_token()
+        id, payload, get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1660,6 +1708,7 @@ async def create_mail_account(
     character_set: str = "UTF-8",
     folder: str = "INBOX",
     is_active: bool = True,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new mail account.
@@ -1674,6 +1723,7 @@ async def create_mail_account(
         character_set: IMAP character set, e.g. "UTF-8".
         folder: Mail folder to monitor.
         is_active: Account is active.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     imap_security_int = _IMAP_SECURITY_MAP.get(imap_security, imap_security)
     params = CreateMailAccountParam(
@@ -1683,7 +1733,8 @@ async def create_mail_account(
         folder=folder, is_active=is_active,
     )
     return await get_client().create_mail_account(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1699,6 +1750,7 @@ async def update_mail_account(
     character_set: Optional[str] = None,
     folder: Optional[str] = None,
     is_active: Optional[bool] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing mail account.
@@ -1714,6 +1766,7 @@ async def update_mail_account(
         character_set: IMAP character set, e.g. "UTF-8".
         folder: Mail folder.
         is_active: Account is active.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     imap_security_int = _IMAP_SECURITY_MAP.get(imap_security, imap_security) if imap_security is not None else None
     params = UpdateMailAccountParam(
@@ -1723,7 +1776,8 @@ async def update_mail_account(
         folder=folder, is_active=is_active,
     )
     return await get_client().update_mail_account(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1797,6 +1851,7 @@ async def create_mail_rule(
     assign_document_type: Optional[int] = None,
     assign_storage_path: Optional[int] = None,
     assign_owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new mail rule.
@@ -1818,6 +1873,7 @@ async def create_mail_rule(
         assign_document_type: Document type ID to assign.
         assign_storage_path: Storage path ID to assign.
         assign_owner: Owner user ID to assign.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     action_int = _MAIL_RULE_ACTION_MAP.get(action, action)
     tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
@@ -1834,7 +1890,8 @@ async def create_mail_rule(
         assign_owner=assign_owner,
     )
     return await get_client().create_mail_rule(
-        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 
@@ -1857,6 +1914,7 @@ async def update_mail_rule(
     assign_document_type: Optional[int] = None,
     assign_storage_path: Optional[int] = None,
     assign_owner: Optional[int] = None,
+    include_all_fields: bool = False,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update an existing mail rule.
@@ -1879,6 +1937,7 @@ async def update_mail_rule(
         assign_document_type: Document type ID to assign.
         assign_storage_path: Storage path ID to assign.
         assign_owner: Owner user ID to assign.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     action_int = _MAIL_RULE_ACTION_MAP.get(action, action) if action is not None else None
     tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
@@ -1895,7 +1954,8 @@ async def update_mail_rule(
         assign_owner=assign_owner,
     )
     return await get_client().update_mail_rule(
-        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
+        id, params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token(),
+        include_all_fields=include_all_fields
     )
 
 

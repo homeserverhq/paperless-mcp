@@ -108,12 +108,16 @@ class PaperlessClient:
             params["fields"] = COMMON_FIELDS["Documents"]
         return await self.get(f"/api/documents/{document_id}/", api_key, params=params or None)
 
-    async def update_document(self, document_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_document(self, document_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/documents/{document_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/documents/{document_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Documents"])
+        return data
 
     async def delete_document_by_id(self, document_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/documents/{document_id}/", api_key)
+        await self.delete(f"/api/documents/{document_id}/", api_key)
+        return {"message": "Document successfully deleted."}
 
     async def get_document_metadata(self, document_id: int, api_key: Optional[str] = None) -> Any:
         return await self.get(f"/api/documents/{document_id}/metadata/", api_key)
@@ -134,7 +138,8 @@ class PaperlessClient:
         return await self.post(f"/api/documents/{document_id}/notes/", api_key, json=payload)
 
     async def delete_document_note(self, document_id: int, note_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/documents/{document_id}/notes/", api_key, params={"id": note_id})
+        await self.delete(f"/api/documents/{document_id}/notes/", api_key, params={"id": note_id})
+        return {"message": "Note successfully deleted."}
 
     # =========================================================================
     # Correspondent Domain Methods
@@ -152,16 +157,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Correspondents"])
         return data
 
-    async def create_correspondent(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_correspondent(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/correspondents/", api_key, json=payload)
+        data = await self.post("/api/correspondents/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Correspondents"])
+        return data
 
-    async def update_correspondent(self, correspondent_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_correspondent(self, correspondent_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/correspondents/{correspondent_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/correspondents/{correspondent_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Correspondents"])
+        return data
 
     async def delete_correspondent_by_id(self, correspondent_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/correspondents/{correspondent_id}/", api_key)
+        await self.delete(f"/api/correspondents/{correspondent_id}/", api_key)
+        return {"message": "Correspondent successfully deleted."}
 
     # =========================================================================
     # Document Type Domain Methods
@@ -179,16 +191,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["DocumentTypes"])
         return data
 
-    async def create_document_type(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_document_type(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/document_types/", api_key, json=payload)
+        data = await self.post("/api/document_types/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["DocumentTypes"])
+        return data
 
-    async def update_document_type(self, document_type_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_document_type(self, document_type_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/document_types/{document_type_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/document_types/{document_type_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["DocumentTypes"])
+        return data
 
     async def delete_document_type_by_id(self, document_type_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/document_types/{document_type_id}/", api_key)
+        await self.delete(f"/api/document_types/{document_type_id}/", api_key)
+        return {"message": "Document type successfully deleted."}
 
     # =========================================================================
     # Tag Domain Methods
@@ -206,16 +225,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Tags"])
         return data
 
-    async def create_tag(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_tag(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/tags/", api_key, json=payload)
+        data = await self.post("/api/tags/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Tags"])
+        return data
 
-    async def update_tag(self, tag_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_tag(self, tag_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/tags/{tag_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/tags/{tag_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Tags"])
+        return data
 
     async def delete_tag_by_id(self, tag_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/tags/{tag_id}/", api_key)
+        await self.delete(f"/api/tags/{tag_id}/", api_key)
+        return {"message": "Tag successfully deleted."}
 
     # =========================================================================
     # Storage Path Domain Methods
@@ -233,16 +259,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["StoragePaths"])
         return data
 
-    async def create_storage_path(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_storage_path(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/storage_paths/", api_key, json=payload)
+        data = await self.post("/api/storage_paths/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["StoragePaths"])
+        return data
 
-    async def update_storage_path(self, storage_path_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_storage_path(self, storage_path_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/storage_paths/{storage_path_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/storage_paths/{storage_path_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["StoragePaths"])
+        return data
 
     async def delete_storage_path_by_id(self, storage_path_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/storage_paths/{storage_path_id}/", api_key)
+        await self.delete(f"/api/storage_paths/{storage_path_id}/", api_key)
+        return {"message": "Storage path successfully deleted."}
 
     # =========================================================================
     # Saved View Domain Methods
@@ -260,16 +293,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["SavedViews"])
         return data
 
-    async def create_saved_view(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_saved_view(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/saved_views/", api_key, json=payload)
+        data = await self.post("/api/saved_views/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["SavedViews"])
+        return data
 
-    async def update_saved_view(self, saved_view_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_saved_view(self, saved_view_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/saved_views/{saved_view_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/saved_views/{saved_view_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["SavedViews"])
+        return data
 
     async def delete_saved_view_by_id(self, saved_view_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/saved_views/{saved_view_id}/", api_key)
+        await self.delete(f"/api/saved_views/{saved_view_id}/", api_key)
+        return {"message": "Saved view successfully deleted."}
 
     # =========================================================================
     # Custom Field Domain Methods
@@ -287,16 +327,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["CustomFields"])
         return data
 
-    async def create_custom_field(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_custom_field(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/custom_fields/", api_key, json=payload)
+        data = await self.post("/api/custom_fields/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["CustomFields"])
+        return data
 
-    async def update_custom_field(self, custom_field_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_custom_field(self, custom_field_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/custom_fields/{custom_field_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/custom_fields/{custom_field_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["CustomFields"])
+        return data
 
     async def delete_custom_field_by_id(self, custom_field_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/custom_fields/{custom_field_id}/", api_key)
+        await self.delete(f"/api/custom_fields/{custom_field_id}/", api_key)
+        return {"message": "Custom field successfully deleted."}
 
     # =========================================================================
     # Task Domain Methods
@@ -342,12 +389,16 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["ShareLinks"])
         return data
 
-    async def create_share_link(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_share_link(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/share_links/", api_key, json=payload)
+        data = await self.post("/api/share_links/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["ShareLinks"])
+        return data
 
     async def delete_share_link_by_id(self, share_link_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/share_links/{share_link_id}/", api_key)
+        await self.delete(f"/api/share_links/{share_link_id}/", api_key)
+        return {"message": "Share link successfully deleted."}
 
     # =========================================================================
     # Workflow Domain Methods
@@ -365,16 +416,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Workflows"])
         return data
 
-    async def create_workflow(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_workflow(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/workflows/", api_key, json=payload)
+        data = await self.post("/api/workflows/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Workflows"])
+        return data
 
-    async def update_workflow(self, workflow_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_workflow(self, workflow_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/workflows/{workflow_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/workflows/{workflow_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["Workflows"])
+        return data
 
     async def delete_workflow_by_id(self, workflow_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/workflows/{workflow_id}/", api_key)
+        await self.delete(f"/api/workflows/{workflow_id}/", api_key)
+        return {"message": "Workflow successfully deleted."}
 
     # =========================================================================
     # Mail Account Domain Methods
@@ -392,16 +450,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["MailAccounts"])
         return data
 
-    async def create_mail_account(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_mail_account(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/mail_accounts/", api_key, json=payload)
+        data = await self.post("/api/mail_accounts/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["MailAccounts"])
+        return data
 
-    async def update_mail_account(self, mail_account_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_mail_account(self, mail_account_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/mail_accounts/{mail_account_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/mail_accounts/{mail_account_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["MailAccounts"])
+        return data
 
     async def delete_mail_account_by_id(self, mail_account_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/mail_accounts/{mail_account_id}/", api_key)
+        await self.delete(f"/api/mail_accounts/{mail_account_id}/", api_key)
+        return {"message": "Mail account successfully deleted."}
 
     # =========================================================================
     # Mail Rule Domain Methods
@@ -419,16 +484,23 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["MailRules"])
         return data
 
-    async def create_mail_rule(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def create_mail_rule(self, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.post("/api/mail_rules/", api_key, json=payload)
+        data = await self.post("/api/mail_rules/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["MailRules"])
+        return data
 
-    async def update_mail_rule(self, mail_rule_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
+    async def update_mail_rule(self, mail_rule_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
-        return await self.patch(f"/api/mail_rules/{mail_rule_id}/", api_key, json=payload)
+        data = await self.patch(f"/api/mail_rules/{mail_rule_id}/", api_key, json=payload)
+        if not include_all_fields:
+            data = self._filter_fields(data, COMMON_FIELDS["MailRules"])
+        return data
 
     async def delete_mail_rule_by_id(self, mail_rule_id: int, api_key: Optional[str] = None) -> Any:
-        return await self.delete(f"/api/mail_rules/{mail_rule_id}/", api_key)
+        await self.delete(f"/api/mail_rules/{mail_rule_id}/", api_key)
+        return {"message": "Mail rule successfully deleted."}
 
     # =========================================================================
     # Search Domain Methods
