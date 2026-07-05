@@ -3,7 +3,8 @@
 This repository contains a Model Context Protocol (MCP) server that acts
 as a secure, multi-tenant proxy between an AI Assistant and the
 Paperless backend API. It exposes **76 MCP tools** covering
-13 resource domains with full CRUD, search, URL generation, bulk editing, and system operations.
+**13 resource domains** with full CRUD, search, URL generation, bulk editing, and system operations.
+**147 automated tests** covering all tool domains.
 
 ## ✨ Features
 
@@ -20,7 +21,7 @@ Paperless backend API. It exposes **76 MCP tools** covering
   and maximize context window efficiency.
 - **🚀 Efficient Gets** — GET responses return only commonly used fields by
   default. Full objects are available via an `include_all_fields` flag.
-- **🧪 Comprehensive Testing** — 82+ automated tests covering all tool domains,
+- **🧪 Comprehensive Testing** — 147 automated tests covering all tool domains,
   run via the test runner pipeline.
 
 ## 🔧 Environment Variables
@@ -30,6 +31,7 @@ Paperless backend API. It exposes **76 MCP tools** covering
 | `PAPERLESS_BASE_URL` | Yes | Docker-internal URL of the Paperless API (e.g. `http://paperless-app:8000`) |
 | `MCP_SERVER_PORT` | Yes | Port number the MCP server listens on |
 | `ALLOW_ALL_AGGREGATE` | No | When `true`, aggregate listing tools honor the `include_all_fields` parameter. When `false` (default), the parameter is silently forced to `False` for aggregate list operations. |
+| `IS_STATEFUL` | No | When `true`, uses stateful Streamable HTTP with session tracking. When `false` (default), uses stateless mode. |
 | `PAPERLESS_PUBLIC_URL` | No | External-facing URL of your Paperless instance (e.g. `https://paperless.example.com`). When set, `get_document_download_url`, `get_document_preview_url`, and `get_document_thumbnail_url` return this base instead of the internal `PAPERLESS_BASE_URL`. Falls back to `PAPERLESS_BASE_URL` if unset. |
 
 ## 📦 Installation & Local Development
