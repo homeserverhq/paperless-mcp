@@ -1,12 +1,12 @@
 """
-End-to-end test harness for Paperless MCP Server.
+Flat end-to-end test harness for Paperless MCP Server.
 
 Connects via Streamable HTTP (JSON-RPC POST), tests all tools,
 and prints a Markdown report to stdout.
 
-Every test runs unconditionally — there is no SKIPPED status.
-Tests exist to find flaws in main.py and client.py; the developer
-fixes application code so that tests pass as a consequence.
+Every test runs unconditionally — no skips, no branching, no loops
+over test configs. Each test is a sequential await call. Failures
+cascade through the state dict without crashing the runner.
 """
 
 import asyncio
@@ -16,7 +16,7 @@ import sys
 import time
 import uuid
 from datetime import datetime, timezone, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from toon_mcp import toon_to_json
@@ -34,12 +34,11 @@ MCP_HEADERS = {
 rid = uuid.uuid4().hex[:8]
 
 results: list[dict[str, Any]] = []
-store: dict[str, Any] = {}
-created: dict[str, str] = {}
 
-_iteration = 1
-_iterations: list[dict[str, int]] = []
 
+# =============================================================================
+# MCP Session (transport layer — internal conditionals are implementation detail)
+# =============================================================================
 
 class MCPSession:
     """MCP Streamable HTTP client using JSON-RPC over HTTP POST (stateful sessions)."""
@@ -116,11 +115,15 @@ class MCPSession:
         return await self._send("tools/call", params)
 
 
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
 def log(msg: str) -> None:
     print(msg, file=sys.stderr)
 
 
-def is_error(result: dict[str, Any]) -> Optional[str]:
+def is_error(result: dict[str, Any]) -> str | None:
     if "error" in result:
         err = result["error"]
         return err.get("message", str(err))
@@ -153,79 +156,53 @@ def extract_content(result: dict[str, Any]) -> Any:
     return result.get("_meta", {})
 
 
-async def run_test(
-    session: MCPSession,
-    label: str,
-    tool: str,
-    params: dict[str, Any] = None,
-) -> bool:
-    if params is None:
-        params = {}
-    try:
-        result = await session.call_tool(tool, params)
-        err = is_error(result)
-        if err:
-            results.append({
-                "label": label, "tool": tool, "status": "FAILED",
-                "reason": err
-            })
-            log(f"  FAIL {label}: {err}")
-            return False
-        data = extract_content(result)
-        results.append({
-            "label": label, "tool": tool, "status": "PASSED", "data": data
-        })
-        log(f"  PASS {label}")
-        return True
-    except Exception as e:
-        results.append({
-            "label": label, "tool": tool, "status": "FAILED",
-            "reason": str(e)
-        })
-        log(f"  FAIL {label}: {e}")
-        return False
-
-
-async def run_test_with_store(
-    session: MCPSession,
-    label: str,
-    tool: str,
-    params: dict[str, Any] = None,
-    store_key: str = None,
-) -> bool:
-    ok = await run_test(session, label, tool, params)
-    if ok and store_key:
-        for r in results:
-            if r["label"] == label and r["status"] == "PASSED":
-                store[store_key] = r.get("data")
-                break
-    return ok
-
-
-def pick_id(key: str) -> Optional[Any]:
-    entry = store.get(key, {})
+def pick_id(state: dict, key: str) -> int:
+    entry = state.get(key, {})
     if isinstance(entry, dict):
         if "id" in entry:
-            return entry.get("id")
+            return entry["id"]
         for val in entry.values():
             if isinstance(val, dict) and "id" in val:
-                return val.get("id")
+                return val["id"]
             if isinstance(val, list) and val and isinstance(val[0], dict) and "id" in val[0]:
-                return val[0].get("id")
-    return None
+                return val[0]["id"]
+    return 0
 
 
-def make_name(base: str) -> str:
-    return f"t{rid}-{base}"
+async def run_verify(
+    session: MCPSession,
+    label: str,
+    tool: str,
+    params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Execute a tool call expecting 'not found'. Not-found = PASS, anything else = FAIL."""
+    if params is None:
+        params = {}
+    result = await session.call_tool(tool, params)
+    err = is_error(result)
+    # Not found after delete = confirmed deleted = PASS
+    # Any other error or success (record still exists) = FAIL
+    is_not_found = "not found" in err.lower() if err else False
+    if is_not_found:
+        results.append({
+            "label": label, "tool": tool, "status": "PASSED",
+            "data": {"verified": "deleted"}
+        })
+        log(f"  PASS {label} (confirmed deleted)")
+        return result
+    reason = err if err else "Record still exists after delete"
+    results.append({
+        "label": label, "tool": tool, "status": "FAILED", "reason": reason
+    })
+    log(f"  FAIL {label}: {reason}")
+    return result
 
 
-def resolve_params(params: Any) -> dict:
-    if callable(params):
-        try:
-            return params(store, rid)
-        except KeyError:
-            return {}
-    return dict(params) if params else {}
+def store_on_pass(label: str, data: Any, state: dict, key: str) -> None:
+    for r in results:
+        if r["label"] == label and r["status"] == "PASSED":
+            state[key] = r.get("data")
+            break
 
 
 def get_list_items(data: Any) -> list[dict[str, Any]]:
@@ -248,46 +225,6 @@ def get_list_items(data: Any) -> list[dict[str, Any]]:
     elif isinstance(data, list):
         return data
     return []
-
-
-async def run_verify_delete(
-    session: MCPSession,
-    label: str,
-    get_tool: str,
-    params: dict[str, Any] = None,
-) -> bool:
-    if params is None:
-        params = {}
-    try:
-        result = await session.call_tool(get_tool, params)
-        err = is_error(result)
-        if err:
-            if "not found" in err.lower():
-                results.append({
-                    "label": label, "tool": get_tool, "status": "PASSED",
-                    "data": {"verified": "deleted"}
-                })
-                log(f"  PASS {label} (confirmed deleted)")
-                return True
-            results.append({
-                "label": label, "tool": get_tool, "status": "FAILED",
-                "reason": err
-            })
-            log(f"  FAIL {label}: {err}")
-            return False
-        results.append({
-            "label": label, "tool": get_tool, "status": "FAILED",
-            "reason": "Record still exists after delete"
-        })
-        log(f"  FAIL {label}: record still exists")
-        return False
-    except Exception as e:
-        results.append({
-            "label": label, "tool": get_tool, "status": "FAILED",
-            "reason": str(e)
-        })
-        log(f"  FAIL {label}: {e}")
-        return False
 
 
 # =============================================================================
@@ -336,62 +273,42 @@ async def prep_create_test_document(api_key: str) -> int:
 
 
 # =============================================================================
-# Test Data Configuration
+# Test Runner Core
 # =============================================================================
 
-RESOURCE_TESTS = [
-    ("Correspondent", "create_correspondent",
-     {"name": make_name("Correspondent")},
-     "get_all_correspondents", "get_correspondent_by_id",
-     "update_correspondent", {"name": make_name("Correspondent-updated")},
-     "delete_correspondent_by_id"),
-    ("DocumentType", "create_document_type",
-     {"name": make_name("DocType")},
-     "get_all_document_types", "get_document_type_by_id",
-     "update_document_type", {"name": make_name("DocType-updated")},
-     "delete_document_type_by_id"),
-    ("Tag", "create_tag",
-     {"name": make_name("Tag"), "color": "#a6cee3"},
-     "get_all_tags", "get_tag_by_id",
-     "update_tag", {"color": "#b2df8a"},
-     "delete_tag_by_id"),
-    ("StoragePath", "create_storage_path",
-     {"name": make_name("StoragePath"), "path": "{created_year}"},
-     "get_all_storage_paths", "get_storage_path_by_id",
-     "update_storage_path", {"path": "{asn}"},
-     "delete_storage_path_by_id"),
-    ("SavedView", "create_saved_view",
-     {"name": make_name("SavedView")},
-     "get_all_saved_views", "get_saved_view_by_id",
-     "update_saved_view", {"show_on_dashboard": True},
-     "delete_saved_view_by_id"),
-    ("CustomField", "create_custom_field",
-     {"name": make_name("CustomField"), "data_type": "string"},
-     "get_all_custom_fields", "get_custom_field_by_id",
-     "update_custom_field", {"name": make_name("CustomField-updated")},
-     "delete_custom_field_by_id"),
-    ("Workflow", "create_workflow",
-     {"name": make_name("Workflow")},
-     "get_all_workflows", "get_workflow_by_id",
-     "update_workflow", {"enabled": False},
-     "delete_workflow_by_id"),
-    ("MailAccount", "create_mail_account",
-     {"name": make_name("MailAccount"), "username": "test@test.com",
-      "password": "test123"},
-     "get_all_mail_accounts", "get_mail_account_by_id",
-     "update_mail_account", {"is_active": False},
-     "delete_mail_account_by_id"),
-     ("MailRule", "create_mail_rule",
-      lambda s, r: {"name": f"t{r}-MailRule",
-                     "account": s.get("mailrule_account", {}).get("id", 0)
-                     if isinstance(s.get("mailrule_account", {}), dict) else 0,
-                     "action": 1, "folder": "INBOX"},
-      "get_all_mail_rules", "get_mail_rule_by_id",
-      "update_mail_rule", {"action": 3},  # MARK_READ — doesn't need action_parameter
-      "delete_mail_rule_by_id"),
-]
+async def run(
+    session: MCPSession,
+    label: str,
+    tool: str,
+    params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Execute a single tool call and record PASS or FAIL. Never crashes."""
+    if params is None:
+        params = {}
+    result = await session.call_tool(tool, params)
+    err = is_error(result)
+    if err:
+        results.append({
+            "label": label, "tool": tool, "status": "FAILED", "reason": err
+        })
+        log(f"  FAIL {label}: {err}")
+        return result
+    data = extract_content(result)
+    results.append({
+        "label": label, "tool": tool, "status": "PASSED", "data": data
+    })
+    log(f"  PASS {label}")
+    return result
 
 
+def resolve_mail_rule_params(state: dict) -> dict[str, Any]:
+    acct_id = pick_id(state, "dep_mailaccount")
+    return {
+        "name": f"t{rid}-MailRule",
+        "account": acct_id,
+        "action": 1,
+        "folder": "INBOX",
+    }
 
 
 # =============================================================================
@@ -399,7 +316,7 @@ RESOURCE_TESTS = [
 # =============================================================================
 
 async def main():
-    global _iteration
+    state: dict[str, Any] = {}
 
     print(f"# Test Report — Paperless MCP Server")
     print(f"\n**Date**: {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())}")
@@ -408,293 +325,360 @@ async def main():
     print()
 
     async with MCPSession(MCP_URL, MCP_HEADERS) as session:
+
         # ==================================================================
-        # Prep Phase: Create a disposable test document
+        # Prep Phase
         # ==================================================================
         log("\n=== Prep Phase: Create Disposable Test Document ===")
         test_doc_id = await prep_create_test_document(API_KEY)
+        state["doc_id"] = test_doc_id
         log(f"  Created test document ID: {test_doc_id}")
 
         # ==================================================================
         # Phase 0: Session Init & Tool Discovery
         # ==================================================================
         log("\n=== Phase 0: Session Init & Tool Discovery ===")
+        await run(session, "T01 tool_discovery", "get_all_documents")
         tools_list = await session.list_tools()
-        tool_names = [t["name"] for t in tools_list]
-        print(f"**Discovered**: {len(tool_names)} tools")
-        log(f"Tools: {', '.join(sorted(tool_names))}")
+        print(f"**Discovered**: {len(tools_list)} tools")
+        log(f"Tools: {', '.join(sorted(t['name'] for t in tools_list))}")
 
         # ==================================================================
         # Phase 1: System Health
         # ==================================================================
         log("\n=== Phase 1: System Health ===")
-        await run_test(session, "A1 check_server_status", "check_server_status")
-        await run_test(session, "A2 get_statistics", "get_statistics")
+        await run(session, "T02 check_server_status", "check_server_status")
+        await run(session, "T03 get_statistics", "get_statistics")
 
         # ==================================================================
-        # Phase 2: List Tools (one get_all_* per resource)
+        # Phase 2: List Tools
         # ==================================================================
         log("\n=== Phase 2: List Tools ===")
-        for entry in RESOURCE_TESTS:
-            label = entry[0]
-            list_tool_name = entry[3]
-            await run_test(session, f"B2 list_{label.lower()}", list_tool_name)
+        await run(session, "T04 list_correspondents", "get_all_correspondents")
+        await run(session, "T05 list_document_types", "get_all_document_types")
+        await run(session, "T06 list_tags", "get_all_tags")
+        await run(session, "T07 list_storage_paths", "get_all_storage_paths")
+        await run(session, "T08 list_saved_views", "get_all_saved_views")
+        await run(session, "T09 list_custom_fields", "get_all_custom_fields")
+        await run(session, "T10 list_workflows", "get_all_workflows")
+        await run(session, "T11 list_mail_accounts", "get_all_mail_accounts")
+        await run(session, "T12 list_mail_rules", "get_all_mail_rules")
 
         # ==================================================================
-        # Phase 3: Resource CRUD Cycles
+        # Phase 3: Resource CRUD — Correspondent
         # ==================================================================
         log("\n=== Phase 3: Resource CRUD Cycle ===")
+        log("\n--- Correspondent ---")
+        await run(session, "T13 create_correspondent", "create_correspondent",
+                  {"name": f"t{rid}-Correspondent"})
+        store_on_pass("T13 create_correspondent", None, state, "correspondent")
 
-        # Pre-create a dependency MailAccount for MailRule (since CRUD cycle
-        # deletes each resource before the next one starts)
-        dep_acct_ok = await run_test_with_store(
-            session, "Z0 create_dep_mailaccount", "create_mail_account",
-            {"name": f"t{rid}-DepMailAcct", "imap_server": "imap.gmail.com",
-             "username": "dep@test.com", "password": "dep123"},
-            store_key="mailrule_account"
-        )
-        dep_acct_id = pick_id("mailrule_account")
+        await run(session, "T14 get_correspondent", "get_correspondent_by_id",
+                  {"id": pick_id(state, "correspondent")})
+        store_on_pass("T14 get_correspondent", None, state, "correspondent_get")
 
-        for entry in RESOURCE_TESTS:
-            label, create_tool, create_params, _, get_tool, update_tool, \
-                update_params, delete_tool = entry
-            key = label.lower()
+        gid = pick_id(state, "correspondent_get") or pick_id(state, "correspondent")
+        await run(session, "T15 update_correspondent", "update_correspondent",
+                  {"id": gid, "name": f"t{rid}-Correspondent-updated"})
+        await run(session, "T16 delete_correspondent", "delete_correspondent_by_id",
+                  {"id": gid})
+        await run_verify(session, "T17 verify_delete_correspondent", "get_correspondent_by_id",
+                  {"id": gid})
 
-            resolved_create = resolve_params(create_params)
+        # ==================================================================
+        # Phase 3: Resource CRUD — DocumentType
+        # ==================================================================
+        log("\n--- DocumentType ---")
+        await run(session, "T18 create_document_type", "create_document_type",
+                  {"name": f"t{rid}-DocType"})
+        store_on_pass("T18 create_document_type", None, state, "documenttype")
 
-            ok = await run_test_with_store(
-                session, f"C1 create_{key}", create_tool, resolved_create,
-                store_key=f"create_{key}"
-            )
-            cid = pick_id(f"create_{key}") if ok else None
-            if cid:
-                created[f"create_{key}"] = cid
+        await run(session, "T19 get_document_type", "get_document_type_by_id",
+                  {"id": pick_id(state, "documenttype")})
+        store_on_pass("T19 get_document_type", None, state, "documenttype_get")
 
-            await run_test_with_store(
-                session, f"C2 get_{key}_by_id", get_tool,
-                {"id": cid} if cid else {"id": 0}, store_key=f"get_{key}"
-            )
+        gid = pick_id(state, "documenttype_get") or pick_id(state, "documenttype")
+        await run(session, "T20 update_document_type", "update_document_type",
+                  {"id": gid, "name": f"t{rid}-DocType-updated"})
+        await run(session, "T21 delete_document_type", "delete_document_type_by_id",
+                  {"id": gid})
+        await run_verify(session, "T22 verify_delete_document_type", "get_document_type_by_id",
+                  {"id": gid})
 
-            gid = pick_id(f"get_{key}") or cid
+        # ==================================================================
+        # Phase 3: Resource CRUD — Tag
+        # ==================================================================
+        log("\n--- Tag ---")
+        await run(session, "T23 create_tag", "create_tag",
+                  {"name": f"t{rid}-Tag", "color": "#a6cee3"})
+        store_on_pass("T23 create_tag", None, state, "tag")
 
-            if key == "mailrule":
-                log(f"  DEBUG store['create_mailaccount'] = {store.get('create_mailaccount', 'NOT FOUND')}")
-                log(f"  DEBUG store keys: {list(store.keys())}")
+        await run(session, "T24 get_tag", "get_tag_by_id",
+                  {"id": pick_id(state, "tag")})
+        store_on_pass("T24 get_tag", None, state, "tag_get")
 
-            resolved_update = resolve_params(update_params)
-            upd = dict(resolved_update)
-            upd["id"] = gid if gid else 0
-            await run_test(
-                session, f"C3 update_{key}", update_tool, upd
-            )
+        gid = pick_id(state, "tag_get") or pick_id(state, "tag")
+        await run(session, "T25 update_tag", "update_tag",
+                  {"id": gid, "color": "#b2df8a"})
+        await run(session, "T26 delete_tag", "delete_tag_by_id",
+                  {"id": gid})
+        await run_verify(session, "T27 verify_delete_tag", "get_tag_by_id",
+                  {"id": gid})
 
-            await run_test(
-                session, f"C4 delete_{key}_by_id", delete_tool,
-                {"id": gid} if gid else {"id": 0}
-            )
+        # ==================================================================
+        # Phase 3: Resource CRUD — StoragePath
+        # ==================================================================
+        log("\n--- StoragePath ---")
+        await run(session, "T28 create_storage_path", "create_storage_path",
+                  {"name": f"t{rid}-StoragePath", "path": "{created_year}"})
+        store_on_pass("T28 create_storage_path", None, state, "storagespath")
 
-            await run_verify_delete(
-                session, f"C5 verify_delete_{key}", get_tool,
-                {"id": gid} if gid else {"id": 0}
-            )
+        await run(session, "T29 get_storage_path", "get_storage_path_by_id",
+                  {"id": pick_id(state, "storagespath")})
+        store_on_pass("T29 get_storage_path", None, state, "storagespath_get")
+
+        gid = pick_id(state, "storagespath_get") or pick_id(state, "storagespath")
+        await run(session, "T30 update_storage_path", "update_storage_path",
+                  {"id": gid, "path": "{asn}"})
+        await run(session, "T31 delete_storage_path", "delete_storage_path_by_id",
+                  {"id": gid})
+        await run_verify(session, "T32 verify_delete_storage_path", "get_storage_path_by_id",
+                  {"id": gid})
+
+        # ==================================================================
+        # Phase 3: Resource CRUD — SavedView
+        # ==================================================================
+        log("\n--- SavedView ---")
+        await run(session, "T33 create_saved_view", "create_saved_view",
+                  {"name": f"t{rid}-SavedView"})
+        store_on_pass("T33 create_saved_view", None, state, "savedview")
+
+        await run(session, "T34 get_saved_view", "get_saved_view_by_id",
+                  {"id": pick_id(state, "savedview")})
+        store_on_pass("T34 get_saved_view", None, state, "savedview_get")
+
+        gid = pick_id(state, "savedview_get") or pick_id(state, "savedview")
+        await run(session, "T35 update_saved_view", "update_saved_view",
+                  {"id": gid, "show_on_dashboard": "true"})
+        await run(session, "T36 delete_saved_view", "delete_saved_view_by_id",
+                  {"id": gid})
+        await run_verify(session, "T37 verify_delete_saved_view", "get_saved_view_by_id",
+                  {"id": gid})
+
+        # ==================================================================
+        # Phase 3: Resource CRUD — CustomField
+        # ==================================================================
+        log("\n--- CustomField ---")
+        await run(session, "T38 create_custom_field", "create_custom_field",
+                  {"name": f"t{rid}-CustomField", "data_type": "string"})
+        store_on_pass("T38 create_custom_field", None, state, "customfield")
+
+        await run(session, "T39 get_custom_field", "get_custom_field_by_id",
+                  {"id": pick_id(state, "customfield")})
+        store_on_pass("T39 get_custom_field", None, state, "customfield_get")
+
+        gid = pick_id(state, "customfield_get") or pick_id(state, "customfield")
+        await run(session, "T40 update_custom_field", "update_custom_field",
+                  {"id": gid, "name": f"t{rid}-CustomField-updated"})
+        await run(session, "T41 delete_custom_field", "delete_custom_field_by_id",
+                  {"id": gid})
+        await run_verify(session, "T42 verify_delete_custom_field", "get_custom_field_by_id",
+                  {"id": gid})
+
+        # ==================================================================
+        # Phase 3: Resource CRUD — Workflow
+        # ==================================================================
+        log("\n--- Workflow ---")
+        await run(session, "T43 create_workflow", "create_workflow",
+                  {"name": f"t{rid}-Workflow"})
+        store_on_pass("T43 create_workflow", None, state, "workflow")
+
+        await run(session, "T44 get_workflow", "get_workflow_by_id",
+                  {"id": pick_id(state, "workflow")})
+        store_on_pass("T44 get_workflow", None, state, "workflow_get")
+
+        gid = pick_id(state, "workflow_get") or pick_id(state, "workflow")
+        await run(session, "T45 update_workflow", "update_workflow",
+                  {"id": gid, "enabled": "false"})
+        await run(session, "T46 delete_workflow", "delete_workflow_by_id",
+                  {"id": gid})
+        await run_verify(session, "T47 verify_delete_workflow", "get_workflow_by_id",
+                  {"id": gid})
+
+        # ==================================================================
+        # Phase 3: Resource CRUD — MailAccount
+        # ==================================================================
+        log("\n--- MailAccount ---")
+        await run(session, "T48 create_mail_account", "create_mail_account",
+                  {"name": f"t{rid}-MailAccount", "username": "test@test.com",
+                   "password": "test123"})
+        store_on_pass("T48 create_mail_account", None, state, "mailaccount")
+
+        await run(session, "T49 get_mail_account", "get_mail_account_by_id",
+                  {"id": pick_id(state, "mailaccount")})
+        store_on_pass("T49 get_mail_account", None, state, "mailaccount_get")
+
+        gid = pick_id(state, "mailaccount_get") or pick_id(state, "mailaccount")
+        await run(session, "T50 update_mail_account", "update_mail_account",
+                  {"id": gid, "is_active": "false"})
+        await run(session, "T51 delete_mail_account", "delete_mail_account_by_id",
+                  {"id": gid})
+        await run_verify(session, "T52 verify_delete_mail_account", "get_mail_account_by_id",
+                  {"id": gid})
+
+        # ==================================================================
+        # Phase 3: Resource CRUD — MailRule (depends on dep_mailaccount)
+        # ==================================================================
+        log("\n--- MailRule ---")
+        await run(session, "T53 create_dep_mailaccount", "create_mail_account",
+                  {"name": f"t{rid}-DepMailAcct", "imap_server": "imap.gmail.com",
+                   "username": "dep@test.com", "password": "dep123"})
+        store_on_pass("T53 create_dep_mailaccount", None, state, "dep_mailaccount")
+
+        await run(session, "T54 create_mail_rule", "create_mail_rule",
+                  resolve_mail_rule_params(state))
+        store_on_pass("T54 create_mail_rule", None, state, "mailrule")
+
+        await run(session, "T55 get_mail_rule", "get_mail_rule_by_id",
+                  {"id": pick_id(state, "mailrule")})
+        store_on_pass("T55 get_mail_rule", None, state, "mailrule_get")
+
+        gid = pick_id(state, "mailrule_get") or pick_id(state, "mailrule")
+        await run(session, "T56 update_mail_rule", "update_mail_rule",
+                  {"id": gid, "action": 3})
+        await run(session, "T57 delete_mail_rule", "delete_mail_rule_by_id",
+                  {"id": gid})
+        await run_verify(session, "T58 verify_delete_mail_rule", "get_mail_rule_by_id",
+                  {"id": gid})
 
         # ==================================================================
         # Phase 4: Document Domain
         # ==================================================================
         log("\n=== Phase 4: Document Tools ===")
 
-        await run_test_with_store(
-            session, "D1 get_all_documents", "get_all_documents",
-            store_key="all_documents"
-        )
+        await run(session, "T59 get_all_documents", "get_all_documents")
+        store_on_pass("T59 get_all_documents", None, state, "all_documents")
 
-        doc_id = test_doc_id
+        doc_id = state.get("doc_id", 0)
 
-        await run_test(
-            session, "D2 get_document_by_id", "get_document_by_id",
-            {"id": doc_id}
-        )
-        await run_test(
-            session, "D3 get_document_metadata", "get_document_metadata",
-            {"id": doc_id}
-        )
-        await run_test(
-            session, "D4 get_document_suggestions",
-            "get_document_suggestions", {"id": doc_id}
-        )
-        await run_test(
-            session, "D5 get_document_ai_suggestions",
-            "get_document_ai_suggestions", {"id": doc_id}
-        )
-        await run_test(
-            session, "D6 get_document_notes", "get_document_notes",
-            {"id": doc_id}
-        )
+        await run(session, "T60 get_document_by_id", "get_document_by_id",
+                  {"id": doc_id})
+        await run(session, "T61 get_document_metadata", "get_document_metadata",
+                  {"id": doc_id})
+        await run(session, "T62 get_document_suggestions", "get_document_suggestions",
+                  {"id": doc_id})
+        await run(session, "T63 get_document_ai_suggestions", "get_document_ai_suggestions",
+                  {"id": doc_id})
+        await run(session, "T64 get_document_notes", "get_document_notes",
+                  {"id": doc_id})
 
-        await run_test_with_store(
-            session, "D7 create_document_note", "create_document_note",
-            {"document_id": doc_id, "note": f"Test note {rid}"},
-            store_key="created_note"
-        )
+        await run(session, "T65 create_document_note", "create_document_note",
+                  {"document_id": doc_id, "note": f"Test note {rid}"})
+        store_on_pass("T65 create_document_note", None, state, "created_note")
 
-        note_id = pick_id("created_note")
-        if note_id:
-            await run_test(
-                session, "D8 delete_document_note",
-                "delete_document_note",
-                {"document_id": doc_id, "note_id": note_id}
-            )
+        note_id = pick_id(state, "created_note")
+        await run(session, "T66 delete_document_note", "delete_document_note",
+                  {"document_id": doc_id, "note_id": note_id})
 
-        await run_test(
-            session, "D9 update_document", "update_document",
-            {"id": doc_id, "title": f"Test title {rid}"}
-        )
+        await run(session, "T67 update_document", "update_document",
+                  {"id": doc_id, "title": f"Test title {rid}"})
 
-        # URL tools (construct URLs from PAPERLESS_PUBLIC_URL or PAPERLESS_BASE_URL)
-        await run_test(
-            session, "D13 get_document_download_url",
-            "get_document_download_url", {"id": doc_id}
-        )
-        await run_test(
-            session, "D14 get_document_preview_url",
-            "get_document_preview_url", {"id": doc_id}
-        )
-        await run_test(
-            session, "D15 get_document_thumbnail_url",
-            "get_document_thumbnail_url", {"id": doc_id}
-        )
+        await run(session, "T68 get_document_download_url", "get_document_download_url",
+                  {"id": doc_id})
+        await run(session, "T69 get_document_preview_url", "get_document_preview_url",
+                  {"id": doc_id})
+        await run(session, "T70 get_document_thumbnail_url", "get_document_thumbnail_url",
+                  {"id": doc_id})
 
-        # Bulk update, reprocess, and assign custom field tests
-        await run_test(
-            session, "D16 bulk_update_documents", "bulk_update_documents",
-            {"documents": str(doc_id), "method": "set_correspondent",
-             "parameters": '{"correspondent": null}'}
-        )
-        await run_test(
-            session, "D17 reprocess_documents", "reprocess_documents",
-            {"documents": str(doc_id)}
-        )
-        # Create a temp custom field for the assign test, then clean it up
-        await run_test_with_store(
-            session, "D18 create_temp_field", "create_custom_field",
-            {"name": f"t{rid}-AssignField", "data_type": "string"},
-            store_key="temp_field"
-        )
-        temp_field_id = pick_id("temp_field")
-        if temp_field_id:
-            await run_test(
-                session, "D19 assign_custom_field", "assign_custom_field",
-                {"documents": str(doc_id), "field_id": temp_field_id, "value": "test-value"}
-            )
-            await run_test(
-                session, "D20 remove_custom_field", "assign_custom_field",
-                {"documents": str(doc_id), "field_id": temp_field_id, "remove": True}
-            )
-            await run_test(
-                session, "D21 delete_temp_field", "delete_custom_field_by_id",
-                {"id": temp_field_id}
-            )
+        await run(session, "T71 bulk_update_documents", "bulk_update_documents",
+                  {"documents": str(doc_id), "method": "set_correspondent",
+                   "parameters": '{"correspondent": null}'})
+        await run(session, "T72 reprocess_documents", "reprocess_documents",
+                  {"documents": str(doc_id)})
 
-        # Share link tests run here while the document still exists
-        await run_test(
-            session, "F1b get_all_documents_for_share", "get_all_documents"
-        )
+        await run(session, "T73 create_temp_custom_field", "create_custom_field",
+                  {"name": f"t{rid}-AssignField", "data_type": "string"})
+        store_on_pass("T73 create_temp_custom_field", None, state, "temp_field")
+
+        temp_field_id = pick_id(state, "temp_field")
+        await run(session, "T74 assign_custom_field", "assign_custom_field",
+                  {"documents": str(doc_id), "field_id": temp_field_id,
+                   "value": "test-value"})
+        await run(session, "T75 remove_custom_field", "assign_custom_field",
+                  {"documents": str(doc_id), "field_id": temp_field_id,
+                   "remove": "true"})
+        await run(session, "T76 delete_temp_custom_field", "delete_custom_field_by_id",
+                  {"id": temp_field_id})
+
+        # ==================================================================
+        # Phase 4: Share Links (before doc delete)
+        # ==================================================================
+        log("\n--- Share Links ---")
+        await run(session, "T77 get_all_documents_for_share", "get_all_documents")
+
         expiration = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
             "%Y-%m-%dT%H:%M:%S+00:00"
         )
-        await run_test_with_store(
-            session, "F2 create_share_link", "create_share_link",
-            {"document": doc_id, "expiration": expiration},
-            store_key="created_share_link"
-        )
-        share_id = pick_id("created_share_link")
-        if share_id:
-            await run_test(
-                session, "F3 get_share_link_by_id", "get_share_link_by_id",
-                {"id": share_id}
-            )
-            await run_test(
-                session, "F4 delete_share_link_by_id",
-                "delete_share_link_by_id", {"id": share_id}
-            )
+        await run(session, "T78 create_share_link", "create_share_link",
+                  {"document": doc_id, "expiration": expiration})
+        store_on_pass("T78 create_share_link", None, state, "share_link")
 
-        await run_test(
-            session, "D10 delete_document_by_id",
-            "delete_document_by_id", {"id": doc_id}
-        )
+        share_id = pick_id(state, "share_link")
+        await run(session, "T79 get_share_link", "get_share_link_by_id",
+                  {"id": share_id})
+        await run(session, "T80 delete_share_link", "delete_share_link_by_id",
+                  {"id": share_id})
 
-        await run_verify_delete(
-            session, "D11 verify_delete_document",
-            "get_document_by_id", {"id": doc_id}
-        )
-
-        await run_test(
-            session, "D12 get_next_asn", "get_next_asn"
-        )
+        # ==================================================================
+        # Phase 4: Document Cleanup
+        # ==================================================================
+        log("\n--- Document Cleanup ---")
+        await run(session, "T81 delete_document", "delete_document_by_id",
+                  {"id": doc_id})
+        await run_verify(session, "T82 verify_delete_document", "get_document_by_id",
+                  {"id": doc_id})
+        await run(session, "T83 get_next_asn", "get_next_asn")
 
         # ==================================================================
         # Phase 5: Task Domain
         # ==================================================================
         log("\n=== Phase 5: Task Tools ===")
 
-        await run_test_with_store(
-            session, "E1 get_all_tasks", "get_all_tasks",
-            store_key="all_tasks"
-        )
-        await run_test(
-            session, "E2 get_task_summary", "get_task_summary",
-            {"days": 30}
-        )
-        await run_test(
-            session, "E3 get_task_status_counts", "get_task_status_counts"
-        )
-        await run_test(
-            session, "E4 get_active_tasks", "get_active_tasks"
-        )
-        await run_test(
-            session, "E5 acknowledge_tasks", "acknowledge_tasks",
-            {"all_tasks": True}
-        )
+        await run(session, "T84 get_all_tasks", "get_all_tasks")
+        store_on_pass("T84 get_all_tasks", None, state, "all_tasks")
 
-        tasks_list = get_list_items(store.get("all_tasks", {}))
-        task_id = tasks_list[0]["id"] if tasks_list else None
-        if task_id:
-            await run_test(
-                session, "E6 get_task_by_id", "get_task_by_id",
-                {"id": task_id}
-            )
+        await run(session, "T85 get_task_summary", "get_task_summary",
+                  {"days": 30})
+        await run(session, "T86 get_task_status_counts", "get_task_status_counts")
+        await run(session, "T87 get_active_tasks", "get_active_tasks")
+        await run(session, "T88 acknowledge_tasks", "acknowledge_tasks",
+                  {"all_tasks": "true"})
+
+        tasks_list = get_list_items(state.get("all_tasks", {}))
+        task_id = tasks_list[0]["id"] if tasks_list else 0
+        await run(session, "T89 get_task_by_id", "get_task_by_id",
+                  {"id": task_id})
 
         # ==================================================================
-        # Phase 6: Share Link Domain (F2-F4 run in Phase 4 before doc delete)
+        # Phase 6: Share Link Domain
         # ==================================================================
         log("\n=== Phase 6: Share Link Tools ===")
-
-        await run_test(
-            session, "F1 get_all_share_links", "get_all_share_links"
-        )
+        await run(session, "T90 get_all_share_links", "get_all_share_links")
 
         # ==================================================================
         # Phase 7: Search Domain
         # ==================================================================
         log("\n=== Phase 7: Search Tools ===")
-
-        await run_test(
-            session, "G1 search_documents", "search_documents",
-            {"query": "test"}
-        )
-
-        await run_test(
-            session, "G2 search_autocomplete", "search_autocomplete",
-            {"term": "test"}
-        )
+        await run(session, "T91 search_documents", "search_documents",
+                  {"query": "test"})
+        await run(session, "T92 search_autocomplete", "search_autocomplete",
+                  {"term": "test"})
 
         # ==================================================================
         # Report Summary
         # ==================================================================
         passed = sum(1 for r in results if r["status"] == "PASSED")
         failed = sum(1 for r in results if r["status"] == "FAILED")
-
-        _iterations.append({"iteration": _iteration, "passed": passed, "failed": failed, "fixes": ""})
 
         print(f"\n## Summary\n")
         print(f"| Status | Count |")
@@ -716,12 +700,6 @@ async def main():
                     print(f"- **Tool**: `{r['tool']}`")
                     print(f"- **Error**: {r['reason']}")
                     print()
-
-        print(f"\n## Iteration History\n")
-        print(f"| Iteration | Passed | Failed | Fixes Applied |")
-        print(f"|-----------|--------|--------|---------------|")
-        for it in _iterations:
-            print(f"| {it['iteration']} | {it['passed']} | {it['failed']} | {it['fixes']} |")
 
         total = len(results)
         print(f"\n---")
