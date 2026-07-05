@@ -343,7 +343,7 @@ async def update_document(
         owner: ID of the owner user to assign.
         remove_inbox_tags: Set to true to remove inbox tags when setting new tags.
     """
-    tag_list = [int(t.strip()) for t in tags.split(",")] if tags else None
+    tag_list = [int(t.strip()) for t in tags.split(",")] if tags is not None else None
     params = UpdateDocumentParam(
         id=id, title=title, content=content,
         correspondent=correspondent, document_type=document_type,
@@ -1114,8 +1114,7 @@ async def create_saved_view(
         filter_rules: JSON string of filter rules. Defaults to "[]".
         owner: ID of the owner user.
     """
-    import json as _json
-    parsed_rules = _json.loads(filter_rules)
+    parsed_rules = json.loads(filter_rules)
     params = CreateSavedViewParam(
         name=name, show_on_dashboard=show_on_dashboard,
         show_in_sidebar=show_in_sidebar, sort_field=sort_field,
@@ -1150,8 +1149,7 @@ async def update_saved_view(
         filter_rules: JSON string of filter rules.
         owner: ID of the owner user.
     """
-    import json as _json
-    parsed_rules = _json.loads(filter_rules) if filter_rules else None
+    parsed_rules = json.loads(filter_rules) if filter_rules else None
     params = UpdateSavedViewParam(
         id=id, name=name, show_on_dashboard=show_on_dashboard,
         show_in_sidebar=show_in_sidebar, sort_field=sort_field,
@@ -1228,8 +1226,7 @@ async def create_custom_field(
         data_type: Data type (string, number, boolean, date, documentlink, select, monetary) (required).
         extra_data: JSON string of extra configuration data. Defaults to "{}".
     """
-    import json as _json
-    parsed_extra = _json.loads(extra_data)
+    parsed_extra = json.loads(extra_data)
     params = CreateCustomFieldParam(name=name, data_type=data_type, extra_data=parsed_extra)
     return await get_client().create_custom_field(
         params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
@@ -1252,8 +1249,7 @@ async def update_custom_field(
         data_type: New data type.
         extra_data: JSON string of extra configuration data.
     """
-    import json as _json
-    parsed_extra = _json.loads(extra_data) if extra_data else None
+    parsed_extra = json.loads(extra_data) if extra_data else None
     params = UpdateCustomFieldParam(
         id=id, name=name, data_type=data_type, extra_data=parsed_extra,
     )
@@ -1491,9 +1487,8 @@ async def create_workflow(
         order: Display order. Defaults to 1.
         enabled: Whether the workflow is enabled. Defaults to True.
     """
-    import json as _json
-    parsed_triggers = _json.loads(triggers)
-    parsed_actions = _json.loads(actions)
+    parsed_triggers = json.loads(triggers)
+    parsed_actions = json.loads(actions)
     params = CreateWorkflowParam(
         name=name, order=order, enabled=enabled,
         triggers=triggers, actions=actions,
@@ -1526,9 +1521,8 @@ async def update_workflow(
         order: New display order.
         enabled: Whether the workflow is enabled.
     """
-    import json as _json
-    parsed_triggers = _json.loads(triggers) if triggers else None
-    parsed_actions = _json.loads(actions) if actions else None
+    parsed_triggers = json.loads(triggers) if triggers else None
+    parsed_actions = json.loads(actions) if actions else None
     params = UpdateWorkflowParam(
         id=id, name=name, order=order, enabled=enabled,
         triggers=triggers, actions=actions,
@@ -1763,7 +1757,7 @@ async def create_mail_rule(
         assign_storage_path: ID of storage path to assign.
         assign_owner: ID of owner user to assign.
     """
-    tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags else None
+    tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
     params = CreateMailRuleParam(
         name=name, account=account, action=action, folder=folder,
         filter_to=filter_to, filter_from=filter_from,
@@ -1823,7 +1817,7 @@ async def update_mail_rule(
         assign_storage_path: ID of storage path to assign.
         assign_owner: ID of owner user to assign.
     """
-    tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags else None
+    tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
     params = UpdateMailRuleParam(
         id=id, name=name, account=account, action=action, folder=folder,
         filter_to=filter_to, filter_from=filter_from,
