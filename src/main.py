@@ -271,6 +271,53 @@ class UpdateMailRuleParam(BaseModel):
     assign_owner: Optional[int] = None
 
 
+class WorkflowTrigger(BaseModel):
+    """A workflow trigger that activates the workflow."""
+    type: int = Field(default=1, description="Trigger type. 1 = watching for files.")
+    filter_path: str = Field(default="/*", description="Glob pattern for file paths to match.")
+
+
+class FilterRule(BaseModel):
+    """A filter rule for a saved view."""
+    rule_type: int = Field(description="Filter rule type ID.")
+    value: str = Field(description="Value to filter by.")
+    type: str = Field(default="", description="Rule type identifier string.")
+
+
+class BulkEditParams(BaseModel):
+    """Parameters for bulk document editing. Provide only the fields relevant to the chosen method."""
+    correspondent: Optional[int] = Field(default=None, description="Correspondent ID. Used with 'set_correspondent'.")
+    document_type: Optional[int] = Field(default=None, description="Document type ID. Used with 'set_document_type'.")
+    storage_path: Optional[int] = Field(default=None, description="Storage path ID. Used with 'set_storage_path'.")
+    tag: Optional[int] = Field(default=None, description="Tag ID. Used with 'add_tag' and 'remove_tag'.")
+    add: Optional[list[int]] = Field(default=None, description="Tag IDs to add. Used with 'modify_tags'.")
+    remove: Optional[list[int]] = Field(default=None, description="Tag IDs to remove. Used with 'modify_tags'.")
+    add_custom_fields: Optional[dict[str, str]] = Field(default=None, description="Custom field ID-value pairs to add. Used with 'modify_custom_fields'.")
+    remove_custom_fields: Optional[list[int]] = Field(default=None, description="Custom field IDs to remove. Used with 'modify_custom_fields'.")
+
+
+class DocumentFilter(BaseModel):
+    """Filter criteria for bulk document operations. All fields are optional and combined with AND logic."""
+    title__icontains: Optional[str] = Field(default=None, description="Title contains (case-insensitive).")
+    title__contains: Optional[str] = Field(default=None, description="Title contains (case-sensitive).")
+    correspondent__id: Optional[int] = Field(default=None, description="Correspondent ID.")
+    document_type__id: Optional[int] = Field(default=None, description="Document type ID.")
+    storage_path__id: Optional[int] = Field(default=None, description="Storage path ID.")
+    tags__id__in: Optional[list[int]] = Field(default=None, description="Document must have any of these tag IDs.")
+    created__date__gte: Optional[str] = Field(default=None, description="Created on or after. ISO 8601 format (2026-06-22T15:00:00-04:00).")
+    created__date__lte: Optional[str] = Field(default=None, description="Created on or before. ISO 8601 format (2026-06-22T15:00:00-04:00).")
+    added__date__gte: Optional[str] = Field(default=None, description="Added to system on or after. ISO 8601 format (2026-06-22T15:00:00-04:00).")
+    added__date__lte: Optional[str] = Field(default=None, description="Added to system on or before. ISO 8601 format (2026-06-22T15:00:00-04:00).")
+    owner__id: Optional[int] = Field(default=None, description="Owner user ID.")
+    is_archived: Optional[bool] = Field(default=None, description="Filter by archived status.")
+
+
+class CustomFieldExtraData(BaseModel):
+    """Extra configuration for a custom field. Shape depends on data_type."""
+    options: Optional[list[str]] = Field(default=None, description="Select options. Used when data_type is 'select'.")
+    currency: Optional[str] = Field(default=None, description="Currency code. Used when data_type is 'monetary'.")
+
+
 # =============================================================================
 # Document Tools
 # =============================================================================
@@ -285,9 +332,9 @@ async def get_all_documents(
     """List all documents.
 
     Args:
-        include_all_fields: When False (default), each document contains only commonly used fields. Set to True to include all fields.
-        page: Page number for paginated results. Defaults to 1.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page: Page number for paginated results.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_documents(
         get_user_token(),
@@ -307,8 +354,8 @@ async def get_document_by_id(
     """Get a single document by its ID.
 
     Args:
-        id: The unique ID of the document.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the document.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_document_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -321,7 +368,7 @@ async def update_document(
     correspondent: Optional[int] = None,
     document_type: Optional[int] = None,
     storage_path: Optional[int] = None,
-    tags: Optional[str] = None,
+    tags: Optional[list[int]] = None,
     created: Optional[str] = None,
     archive_serial_number: Optional[int] = None,
     owner: Optional[int] = None,
@@ -331,23 +378,22 @@ async def update_document(
     """Update a document's metadata.
 
     Args:
-        id: The unique ID of the document to update.
-        title: New title for the document.
-        content: New content/OCR text for the document.
-        correspondent: ID of the correspondent to assign (null to unset).
-        document_type: ID of the document type to assign (null to unset).
-        storage_path: ID of the storage path to assign (null to unset).
-        tags: Comma-separated list of tag IDs to assign.
-        created: Use ISO 8601 format with explicit UTC offset (2026-06-22T15:00:00-04:00).
-        archive_serial_number: Archive serial number to assign (0 to unset).
-        owner: ID of the owner user to assign.
-        remove_inbox_tags: Set to true to remove inbox tags when setting new tags.
+        id: ID of the document.
+        title: Title of the document.
+        content: Content/OCR text of the document.
+        correspondent: Correspondent ID to assign. Null to unset.
+        document_type: Document type ID to assign. Null to unset.
+        storage_path: Storage path ID to assign. Null to unset.
+        tags: Tag IDs to assign.
+        created: ISO 8601 format (2026-06-22T15:00:00-04:00).
+        archive_serial_number: Archive serial number to assign. 0 to unset.
+        owner: Owner user ID to assign.
+        remove_inbox_tags: Remove inbox tags when setting new tags.
     """
-    tag_list = [int(t.strip()) for t in tags.split(",")] if tags is not None else None
     params = UpdateDocumentParam(
         id=id, title=title, content=content,
         correspondent=correspondent, document_type=document_type,
-        storage_path=storage_path, tags=tag_list,
+        storage_path=storage_path, tags=tags,
         created=created, archive_serial_number=archive_serial_number,
         owner=owner, remove_inbox_tags=remove_inbox_tags,
     )
@@ -364,7 +410,7 @@ async def delete_document_by_id(
     """Delete a document by its ID.
 
     Args:
-        id: The unique ID of the document to delete (required).
+        id: ID of the document.
     """
     return await get_client().delete_document_by_id(id, get_user_token())
 
@@ -377,7 +423,7 @@ async def get_document_metadata(
     """Get file metadata for a document.
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     return await get_client().get_document_metadata(id, get_user_token())
 
@@ -390,7 +436,7 @@ async def get_document_suggestions(
     """Get ML-based suggestions for a document (correspondent, tags, document type, etc.).
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     return await get_client().get_document_suggestions(id, get_user_token())
 
@@ -403,7 +449,7 @@ async def get_document_ai_suggestions(
     """Get AI/LLM-based suggestions for a document.
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     return await get_client().get_document_ai_suggestions(id, get_user_token())
 
@@ -423,7 +469,7 @@ async def get_document_download_url(
     """Get the download URL for a document's original file.
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
     return {"download_url": f"{public_url}/api/documents/{id}/download/"}
@@ -437,7 +483,7 @@ async def get_document_preview_url(
     """Get the preview URL for a document.
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
     return {"preview_url": f"{public_url}/api/documents/{id}/preview/"}
@@ -451,7 +497,7 @@ async def get_document_thumbnail_url(
     """Get the thumbnail URL for a document.
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     public_url = PAPERLESS_PUBLIC_URL or os.getenv("PAPERLESS_BASE_URL", "").rstrip("/")
     return {"thumbnail_url": f"{public_url}/api/documents/{id}/thumb/"}
@@ -459,36 +505,30 @@ async def get_document_thumbnail_url(
 
 @mcp.tool()
 async def bulk_update_documents(
-    documents: str,
+    documents: list[int],
     method: str,
-    parameters: str = "{}",
+    parameters: BulkEditParams = BulkEditParams(),
     all: bool = False,
-    filters: str = "{}",
+    filters: DocumentFilter = DocumentFilter(),
     ctx: Context = None
 ) -> dict[str, Any]:
     """Update multiple documents at once using a bulk edit method.
 
     Args:
-        documents: Comma-separated list of document IDs to update (required if all is False).
-        method: The bulk edit method. One of: set_correspondent, set_document_type, set_storage_path, add_tag, remove_tag, modify_tags, modify_custom_fields, delete.
-        parameters: JSON string of method-specific parameters (e.g. '{"correspondent": 5}').
-        all: When true, applies to all documents matching filters instead of the documents list.
-        filters: JSON string of filter parameters used when all is true.
+        documents: Document IDs to update.
+        method: Bulk edit method. One of: set_correspondent, set_document_type, set_storage_path, add_tag, remove_tag, modify_tags, modify_custom_fields, delete.
+        parameters: Method-specific parameters.
+        all: Apply to all documents matching filters instead of the documents list.
+        filters: Filter criteria for bulk operations.
     """
-    doc_ids = [int(d.strip()) for d in documents.split(",") if d.strip()]
-    parsed_params: dict[str, Any] = {}
-    if parameters and parameters != "{}":
-        parsed_params = json.loads(parameters)
-    parsed_filters: dict[str, Any] = {}
-    if filters and filters != "{}":
-        parsed_filters = json.loads(filters)
     payload: dict[str, Any] = {
         "method": method,
-        "parameters": parsed_params,
-        "documents": doc_ids,
+        "parameters": parameters.model_dump(exclude_unset=True),
+        "documents": documents,
     }
     if all:
         payload["all"] = True
+    parsed_filters = filters.model_dump(exclude_none=True)
     if parsed_filters:
         payload["filters"] = parsed_filters
     data = await get_client().bulk_edit_documents(payload, get_user_token())
@@ -497,27 +537,24 @@ async def bulk_update_documents(
 
 @mcp.tool()
 async def reprocess_documents(
-    documents: str = "",
+    documents: list[int] = [],
     all: bool = False,
-    filters: str = "{}",
+    filters: DocumentFilter = DocumentFilter(),
     ctx: Context = None
 ) -> dict[str, Any]:
-    """Reprocess (re-run OCR/document processing on) one or more documents.
+    """Reprocess one or more documents.
 
     Args:
-        documents: Comma-separated list of document IDs to reprocess. Ignored when all is true.
-        all: When true, reprocesses all documents matching filters instead of the documents list.
-        filters: JSON string of filter parameters used when all is true.
+        documents: Document IDs to reprocess. Ignored when all is true.
+        all: Reprocess all documents matching filters instead of the documents list.
+        filters: Filter criteria for bulk operations.
     """
-    doc_ids = [int(d.strip()) for d in documents.split(",") if d.strip()]
-    parsed_filters: dict[str, Any] = {}
-    if filters and filters != "{}":
-        parsed_filters = json.loads(filters)
     payload: dict[str, Any] = {
-        "documents": doc_ids,
+        "documents": documents,
     }
     if all:
         payload["all"] = True
+    parsed_filters = filters.model_dump(exclude_none=True)
     if parsed_filters:
         payload["filters"] = parsed_filters
     data = await get_client().reprocess_documents(payload, get_user_token())
@@ -526,7 +563,7 @@ async def reprocess_documents(
 
 @mcp.tool()
 async def assign_custom_field(
-    documents: str,
+    documents: list[int],
     field_id: int,
     value: str = "",
     remove: bool = False,
@@ -535,12 +572,12 @@ async def assign_custom_field(
     """Assign or remove a custom field value on one or more documents.
 
     Args:
-        documents: Comma-separated list of document IDs to update (required).
-        field_id: The ID of the custom field definition (required).
-        value: The value to assign to the custom field (required unless remove is true).
-        remove: When true, removes the custom field from the documents instead of assigning a value.
+        documents: Document IDs to update.
+        field_id: ID of the custom field definition.
+        value: Value to assign to the custom field.
+        remove: Remove the custom field from the documents instead of assigning a value.
     """
-    doc_ids = [int(d.strip()) for d in documents.split(",") if d.strip()]
+    doc_ids = documents
     if remove:
         params: dict[str, Any] = {"add_custom_fields": [], "remove_custom_fields": [field_id]}
     else:
@@ -562,7 +599,7 @@ async def get_document_notes(
     """Get all notes for a document.
 
     Args:
-        id: The unique ID of the document (required).
+        id: ID of the document.
     """
     data = await get_client().get_document_notes(id, get_user_token())
     return {"notes": data}
@@ -577,8 +614,8 @@ async def create_document_note(
     """Add a note to a document.
 
     Args:
-        document_id: The unique ID of the document (required).
-        note: The note text to add (required).
+        document_id: ID of the document.
+        note: The note text to add.
     """
     params = CreateNoteParam(note=note)
     data = await get_client().create_document_note(
@@ -596,8 +633,8 @@ async def delete_document_note(
     """Delete a note from a document.
 
     Args:
-        document_id: The unique ID of the document (required).
-        note_id: The ID of the note to delete (required).
+        document_id: ID of the document.
+        note_id: The ID of the note to delete.
     """
     data = await get_client().delete_document_note(document_id, note_id, get_user_token())
     return {"notes": data}
@@ -616,8 +653,8 @@ async def get_all_correspondents(
     """List all correspondents.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_correspondents(
         get_user_token(),
@@ -636,8 +673,8 @@ async def get_correspondent_by_id(
     """Get a single correspondent by ID.
 
     Args:
-        id: The unique ID of the correspondent.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the correspondent.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_correspondent_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -654,11 +691,11 @@ async def create_correspondent(
     """Create a new correspondent.
 
     Args:
-        name: Name of the new correspondent (required).
-        matching_algorithm: Matching algorithm ID. Defaults to 1 (any).
-        is_insensitive: Whether matching is case-insensitive. Defaults to True.
+        name: Name of the correspondent.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
         match: Match pattern string.
-        owner: ID of the owner user.
+        owner: Owner user ID.
     """
     params = CreateCorrespondentParam(
         name=name, matching_algorithm=matching_algorithm,
@@ -682,12 +719,12 @@ async def update_correspondent(
     """Update an existing correspondent.
 
     Args:
-        id: The unique ID of the correspondent to update (required).
-        name: New name for the correspondent.
-        matching_algorithm: New matching algorithm ID.
-        is_insensitive: Whether matching is case-insensitive.
-        match: New match pattern string.
-        owner: ID of the owner user.
+        id: ID of the correspondent.
+        name: Name of the correspondent.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
+        match: Match pattern string.
+        owner: Owner user ID.
     """
     params = UpdateCorrespondentParam(
         id=id, name=name, matching_algorithm=matching_algorithm,
@@ -706,7 +743,7 @@ async def delete_correspondent_by_id(
     """Delete a correspondent by ID.
 
     Args:
-        id: The unique ID of the correspondent to delete (required).
+        id: ID of the correspondent.
     """
     return await get_client().delete_correspondent_by_id(id, get_user_token())
 
@@ -724,8 +761,8 @@ async def get_all_document_types(
     """List all document types.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_document_types(
         get_user_token(),
@@ -744,8 +781,8 @@ async def get_document_type_by_id(
     """Get a single document type by ID.
 
     Args:
-        id: The unique ID of the document type.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the document type.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_document_type_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -762,11 +799,11 @@ async def create_document_type(
     """Create a new document type.
 
     Args:
-        name: Name of the new document type (required).
-        matching_algorithm: Matching algorithm ID. Defaults to 1 (any).
-        is_insensitive: Whether matching is case-insensitive. Defaults to True.
+        name: Name of the document type.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
         match: Match pattern string.
-        owner: ID of the owner user.
+        owner: Owner user ID.
     """
     params = CreateDocumentTypeParam(
         name=name, matching_algorithm=matching_algorithm,
@@ -790,12 +827,12 @@ async def update_document_type(
     """Update an existing document type.
 
     Args:
-        id: The unique ID of the document type to update (required).
-        name: New name for the document type.
-        matching_algorithm: New matching algorithm ID.
-        is_insensitive: Whether matching is case-insensitive.
-        match: New match pattern string.
-        owner: ID of the owner user.
+        id: ID of the document type.
+        name: Name of the document type.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
+        match: Match pattern string.
+        owner: Owner user ID.
     """
     params = UpdateDocumentTypeParam(
         id=id, name=name, matching_algorithm=matching_algorithm,
@@ -814,7 +851,7 @@ async def delete_document_type_by_id(
     """Delete a document type by ID.
 
     Args:
-        id: The unique ID of the document type to delete (required).
+        id: ID of the document type.
     """
     return await get_client().delete_document_type_by_id(id, get_user_token())
 
@@ -832,8 +869,8 @@ async def get_all_tags(
     """List all tags.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_tags(
         get_user_token(),
@@ -852,8 +889,8 @@ async def get_tag_by_id(
     """Get a single tag by ID.
 
     Args:
-        id: The unique ID of the tag.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the tag.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_tag_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -873,14 +910,14 @@ async def create_tag(
     """Create a new tag.
 
     Args:
-        name: Name of the new tag (required).
-        color: Hex color code. Defaults to "#a6cee3".
-        is_inbox_tag: Whether this is an inbox tag. Defaults to False.
-        matching_algorithm: Matching algorithm ID. Defaults to 1 (any).
-        is_insensitive: Whether matching is case-insensitive. Defaults to True.
+        name: Name of the tag.
+        color: Hex color code.
+        is_inbox_tag: Inbox tag.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
         match: Match pattern string.
-        parent: ID of the parent tag.
-        owner: ID of the owner user.
+        parent: Parent tag ID.
+        owner: Owner user ID.
     """
     params = CreateTagParam(
         name=name, color=color, is_inbox_tag=is_inbox_tag,
@@ -908,15 +945,15 @@ async def update_tag(
     """Update an existing tag.
 
     Args:
-        id: The unique ID of the tag to update (required).
-        name: New name for the tag.
-        color: New hex color code.
-        is_inbox_tag: Whether this is an inbox tag.
-        matching_algorithm: New matching algorithm ID.
-        is_insensitive: Whether matching is case-insensitive.
-        match: New match pattern string.
-        parent: ID of the parent tag.
-        owner: ID of the owner user.
+        id: ID of the tag.
+        name: Name of the tag.
+        color: Hex color code.
+        is_inbox_tag: Inbox tag.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
+        match: Match pattern string.
+        parent: Parent tag ID.
+        owner: Owner user ID.
     """
     params = UpdateTagParam(
         id=id, name=name, color=color, is_inbox_tag=is_inbox_tag,
@@ -936,7 +973,7 @@ async def delete_tag_by_id(
     """Delete a tag by ID.
 
     Args:
-        id: The unique ID of the tag to delete (required).
+        id: ID of the tag.
     """
     return await get_client().delete_tag_by_id(id, get_user_token())
 
@@ -954,8 +991,8 @@ async def get_all_storage_paths(
     """List all storage paths.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_storage_paths(
         get_user_token(),
@@ -974,8 +1011,8 @@ async def get_storage_path_by_id(
     """Get a single storage path by ID.
 
     Args:
-        id: The unique ID of the storage path.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the storage path.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_storage_path_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -993,12 +1030,12 @@ async def create_storage_path(
     """Create a new storage path.
 
     Args:
-        name: Name of the new storage path (required).
-        path: The storage path template (required).
-        matching_algorithm: Matching algorithm ID. Defaults to 6 (auto).
-        is_insensitive: Whether matching is case-insensitive. Defaults to True.
+        name: Name of the storage path.
+        path: The storage path template.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
         match: Match pattern string.
-        owner: ID of the owner user.
+        owner: Owner user ID.
     """
     params = CreateStoragePathParam(
         name=name, path=path, matching_algorithm=matching_algorithm,
@@ -1023,13 +1060,13 @@ async def update_storage_path(
     """Update an existing storage path.
 
     Args:
-        id: The unique ID of the storage path to update (required).
-        name: New name for the storage path.
-        path: New storage path template.
-        matching_algorithm: New matching algorithm ID.
-        is_insensitive: Whether matching is case-insensitive.
-        match: New match pattern string.
-        owner: ID of the owner user.
+        id: ID of the storage path.
+        name: Name of the storage path.
+        path: Storage path template.
+        matching_algorithm: Matching algorithm ID.
+        is_insensitive: Case-insensitive matching.
+        match: Match pattern string.
+        owner: Owner user ID.
     """
     params = UpdateStoragePathParam(
         id=id, name=name, path=path, matching_algorithm=matching_algorithm,
@@ -1048,7 +1085,7 @@ async def delete_storage_path_by_id(
     """Delete a storage path by ID.
 
     Args:
-        id: The unique ID of the storage path to delete (required).
+        id: ID of the storage path.
     """
     return await get_client().delete_storage_path_by_id(id, get_user_token())
 
@@ -1066,8 +1103,8 @@ async def get_all_saved_views(
     """List all saved views.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_saved_views(
         get_user_token(),
@@ -1086,8 +1123,8 @@ async def get_saved_view_by_id(
     """Get a single saved view by ID.
 
     Args:
-        id: The unique ID of the saved view.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the saved view.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_saved_view_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1099,22 +1136,22 @@ async def create_saved_view(
     show_in_sidebar: bool = True,
     sort_field: str = "created",
     sort_reverse: bool = True,
-    filter_rules: str = "[]",
+    filter_rules: list[FilterRule] = [],
     owner: Optional[int] = None,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Create a new saved view.
 
     Args:
-        name: Name of the new saved view (required).
-        show_on_dashboard: Show on dashboard. Defaults to False.
-        show_in_sidebar: Show in sidebar. Defaults to True.
-        sort_field: Field to sort by. Defaults to "created".
-        sort_reverse: Reverse sort order. Defaults to True.
-        filter_rules: JSON string of filter rules. Defaults to "[]".
-        owner: ID of the owner user.
+        name: Name of the saved view.
+        show_on_dashboard: Show on dashboard.
+        show_in_sidebar: Show in sidebar.
+        sort_field: Field to sort by.
+        sort_reverse: Reverse sort order.
+        filter_rules: Filter rules for the view.
+        owner: Owner user ID.
     """
-    parsed_rules = json.loads(filter_rules)
+    parsed_rules = [r.model_dump() for r in filter_rules]
     params = CreateSavedViewParam(
         name=name, show_on_dashboard=show_on_dashboard,
         show_in_sidebar=show_in_sidebar, sort_field=sort_field,
@@ -1140,14 +1177,14 @@ async def update_saved_view(
     """Update an existing saved view.
 
     Args:
-        id: The unique ID of the saved view to update (required).
-        name: New name for the saved view.
+        id: ID of the saved view.
+        name: Name of the saved view.
         show_on_dashboard: Show on dashboard.
         show_in_sidebar: Show in sidebar.
         sort_field: Field to sort by.
         sort_reverse: Reverse sort order.
         filter_rules: JSON string of filter rules.
-        owner: ID of the owner user.
+        owner: Owner user ID.
     """
     parsed_rules = json.loads(filter_rules) if filter_rules else None
     params = UpdateSavedViewParam(
@@ -1168,7 +1205,7 @@ async def delete_saved_view_by_id(
     """Delete a saved view by ID.
 
     Args:
-        id: The unique ID of the saved view to delete (required).
+        id: ID of the saved view.
     """
     return await get_client().delete_saved_view_by_id(id, get_user_token())
 
@@ -1186,8 +1223,8 @@ async def get_all_custom_fields(
     """List all custom fields.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_custom_fields(
         get_user_token(),
@@ -1206,8 +1243,8 @@ async def get_custom_field_by_id(
     """Get a single custom field by ID.
 
     Args:
-        id: The unique ID of the custom field.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the custom field.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_custom_field_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1222,9 +1259,9 @@ async def create_custom_field(
     """Create a new custom field.
 
     Args:
-        name: Name of the new custom field (required).
-        data_type: Data type (string, number, boolean, date, documentlink, select, monetary) (required).
-        extra_data: JSON string of extra configuration data. Defaults to "{}".
+        name: Name of the custom field.
+        data_type: Data type (string, number, boolean, date, documentlink, select, monetary).
+        extra_data: Extra configuration for the field.
     """
     parsed_extra = json.loads(extra_data)
     params = CreateCustomFieldParam(name=name, data_type=data_type, extra_data=parsed_extra)
@@ -1244,10 +1281,10 @@ async def update_custom_field(
     """Update an existing custom field.
 
     Args:
-        id: The unique ID of the custom field to update (required).
-        name: New name for the custom field.
-        data_type: New data type.
-        extra_data: JSON string of extra configuration data.
+        id: ID of the custom field.
+        name: Name of the custom field.
+        data_type: Data type.
+        extra_data: Extra configuration for the field.
     """
     parsed_extra = json.loads(extra_data) if extra_data else None
     params = UpdateCustomFieldParam(
@@ -1266,7 +1303,7 @@ async def delete_custom_field_by_id(
     """Delete a custom field by ID.
 
     Args:
-        id: The unique ID of the custom field to delete (required).
+        id: ID of the custom field.
     """
     return await get_client().delete_custom_field_by_id(id, get_user_token())
 
@@ -1284,8 +1321,8 @@ async def get_all_tasks(
     """List all tasks.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_tasks(
         get_user_token(),
@@ -1304,8 +1341,8 @@ async def get_task_by_id(
     """Get a single task by ID.
 
     Args:
-        id: The unique ID of the task.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the task.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_task_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1318,7 +1355,7 @@ async def get_task_summary(
     """Get aggregated task statistics.
 
     Args:
-        days: Number of days to look back. Defaults to 30.
+        days: Number of days to look back.
     """
     data = await get_client().get_task_summary(get_user_token(), days=days)
     return {"summary": data}
@@ -1339,18 +1376,17 @@ async def get_active_tasks(ctx: Context = None) -> dict[str, Any]:
 
 @mcp.tool()
 async def acknowledge_tasks(
-    tasks: Optional[str] = None,
+    tasks: Optional[list[int]] = None,
     all_tasks: Optional[bool] = None,
     ctx: Context = None
 ) -> dict[str, Any]:
     """Acknowledge one or more tasks.
 
     Args:
-        tasks: Comma-separated list of task IDs to acknowledge.
-        all_tasks: Set to true to acknowledge all tasks.
+        tasks: Task IDs to acknowledge.
+        all_tasks: Acknowledge all tasks.
     """
-    task_list = [int(t.strip()) for t in tasks.split(",")] if tasks else None
-    params = AcknowledgeTasksParam(tasks=task_list, all=all_tasks)
+    params = AcknowledgeTasksParam(tasks=tasks, all=all_tasks)
     return await get_client().acknowledge_tasks(
         params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True), get_user_token()
     )
@@ -1369,8 +1405,8 @@ async def get_all_share_links(
     """List all share links.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_share_links(
         get_user_token(),
@@ -1389,8 +1425,8 @@ async def get_share_link_by_id(
     """Get a single share link by ID.
 
     Args:
-        id: The unique ID of the share link.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the share link.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_share_link_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1405,9 +1441,9 @@ async def create_share_link(
     """Create a new share link.
 
     Args:
-        document: The ID of the document to share (required).
-        expiration: Use ISO 8601 format with explicit UTC offset (2026-06-22T15:00:00-04:00).
-        file_version: File version to share. Defaults to "archive".
+        document: ID of the document to share.
+        expiration: ISO 8601 format (2026-06-22T15:00:00-04:00).
+        file_version: File version to share.
     """
     params = CreateShareLinkParam(
         document=document, expiration=expiration, file_version=file_version,
@@ -1425,7 +1461,7 @@ async def delete_share_link_by_id(
     """Delete a share link by ID.
 
     Args:
-        id: The unique ID of the share link to delete (required).
+        id: ID of the share link.
     """
     return await get_client().delete_share_link_by_id(id, get_user_token())
 
@@ -1443,8 +1479,8 @@ async def get_all_workflows(
     """List all workflows.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_workflows(
         get_user_token(),
@@ -1463,8 +1499,8 @@ async def get_workflow_by_id(
     """Get a single workflow by ID.
 
     Args:
-        id: The unique ID of the workflow.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the workflow.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_workflow_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1472,8 +1508,8 @@ async def get_workflow_by_id(
 @mcp.tool()
 async def create_workflow(
     name: str,
-    triggers: str = "[{\"type\": 1, \"filter_path\": \"/*\"}]",
-    actions: str = "[{\"type\": 1}]",
+    triggers: list[WorkflowTrigger] = [WorkflowTrigger()],
+    actions: list[int] = [1],
     order: int = 1,
     enabled: bool = True,
     ctx: Context = None
@@ -1481,17 +1517,16 @@ async def create_workflow(
     """Create a new workflow.
 
     Args:
-        name: Name of the new workflow (required).
-        triggers: JSON string of trigger definitions. Defaults to a basic file-watching trigger.
-        actions: JSON string of action definitions. Defaults to a basic action.
-        order: Display order. Defaults to 1.
-        enabled: Whether the workflow is enabled. Defaults to True.
+        name: Name of the workflow.
+        triggers: Trigger definitions.
+        actions: Action type IDs.
+        order: Display order.
+        enabled: Workflow is enabled.
     """
-    parsed_triggers = json.loads(triggers)
-    parsed_actions = json.loads(actions)
+    parsed_triggers = [t.model_dump() for t in triggers]
+    parsed_actions = [{"type": a} for a in actions]
     params = CreateWorkflowParam(
         name=name, order=order, enabled=enabled,
-        triggers=triggers, actions=actions,
     )
     payload = params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True)
     payload["triggers"] = parsed_triggers
@@ -1514,12 +1549,12 @@ async def update_workflow(
     """Update an existing workflow.
 
     Args:
-        id: The unique ID of the workflow to update (required).
-        name: New name for the workflow.
-        triggers: JSON string of trigger definitions.
-        actions: JSON string of action definitions.
-        order: New display order.
-        enabled: Whether the workflow is enabled.
+        id: ID of the workflow.
+        name: Name of the workflow.
+        triggers: Trigger definitions.
+        actions: Action type IDs.
+        order: Display order.
+        enabled: Workflow is enabled.
     """
     parsed_triggers = json.loads(triggers) if triggers else None
     parsed_actions = json.loads(actions) if actions else None
@@ -1545,7 +1580,7 @@ async def delete_workflow_by_id(
     """Delete a workflow by ID.
 
     Args:
-        id: The unique ID of the workflow to delete (required).
+        id: ID of the workflow.
     """
     return await get_client().delete_workflow_by_id(id, get_user_token())
 
@@ -1563,8 +1598,8 @@ async def get_all_mail_accounts(
     """List all mail accounts.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_mail_accounts(
         get_user_token(),
@@ -1583,8 +1618,8 @@ async def get_mail_account_by_id(
     """Get a single mail account by ID.
 
     Args:
-        id: The unique ID of the mail account.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the mail account.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_mail_account_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1605,15 +1640,15 @@ async def create_mail_account(
     """Create a new mail account.
 
     Args:
-        name: Name of the new mail account (required).
-        username: Username for the mail account (required).
-        password: Password for the mail account (required).
-        imap_server: IMAP server hostname. Defaults to "imap.gmail.com".
-        imap_port: IMAP server port. Defaults to 993.
-        imap_security: IMAP security type (1=None, 2=SSL/TLS, 3=STARTTLS). Defaults to 2.
-        character_set: Character set. Defaults to "UTF-8".
-        folder: Mail folder to monitor. Defaults to "INBOX".
-        is_active: Whether the account is active. Defaults to True.
+        name: Name of the mail account.
+        username: Username for the mail account.
+        password: Password for the mail account.
+        imap_server: IMAP server hostname.
+        imap_port: IMAP server port.
+        imap_security: IMAP security type. 1=None, 2=SSL/TLS, 3=STARTTLS.
+        character_set: Character set.
+        folder: Mail folder to monitor.
+        is_active: Account is active.
     """
     params = CreateMailAccountParam(
         name=name, username=username, password=password,
@@ -1643,16 +1678,16 @@ async def update_mail_account(
     """Update an existing mail account.
 
     Args:
-        id: The unique ID of the mail account to update (required).
-        name: New name for the mail account.
-        username: New username.
-        password: New password.
-        imap_server: New IMAP server hostname.
-        imap_port: New IMAP server port.
-        imap_security: New IMAP security type.
-        character_set: New character set.
-        folder: New mail folder.
-        is_active: Whether the account is active.
+        id: ID of the mail account.
+        name: Name of the mail account.
+        username: Username.
+        password: Password.
+        imap_server: IMAP server hostname.
+        imap_port: IMAP server port.
+        imap_security: IMAP security type.
+        character_set: Character set.
+        folder: Mail folder.
+        is_active: Account is active.
     """
     params = UpdateMailAccountParam(
         id=id, name=name, username=username, password=password,
@@ -1673,7 +1708,7 @@ async def delete_mail_account_by_id(
     """Delete a mail account by ID.
 
     Args:
-        id: The unique ID of the mail account to delete (required).
+        id: ID of the mail account.
     """
     return await get_client().delete_mail_account_by_id(id, get_user_token())
 
@@ -1691,8 +1726,8 @@ async def get_all_mail_rules(
     """List all mail rules.
 
     Args:
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to include all fields.
-        page_size: Number of results per page. Defaults to 500.
+        include_all_fields: Default False (common fields only). Set True for all fields.
+        page_size: Number of results per page.
     """
     data = await get_client().get_all_mail_rules(
         get_user_token(),
@@ -1711,8 +1746,8 @@ async def get_mail_rule_by_id(
     """Get a single mail rule by ID.
 
     Args:
-        id: The unique ID of the mail rule.
-        include_all_fields: When False (default), returns only commonly used fields. Set to True to retrieve all available fields.
+        id: ID of the mail rule.
+        include_all_fields: Default False (common fields only). Set True for all fields.
     """
     return await get_client().get_mail_rule_by_id(id, get_user_token(), include_all_fields=include_all_fields)
 
@@ -1740,22 +1775,22 @@ async def create_mail_rule(
     """Create a new mail rule.
 
     Args:
-        name: Name of the new mail rule (required).
-        account: ID of the mail account (required).
-        action: Action type (1=delete, 2=mark_read, 3=flag, 4=move, 5=copy) (required).
-        folder: Folder to apply rule to (required).
-        filter_to: Filter by To address. Defaults to "*".
-        filter_from: Filter by From address. Defaults to "*".
-        filter_subject: Filter by subject. Defaults to "*".
-        filter_attachment_filename: Filter by attachment filename. Defaults to "*".
-        maximum_age: Maximum age of messages in days. Defaults to 30.
-        order: Rule order. Defaults to 0.
+        name: Name of the mail rule.
+        account: ID of the mail account.
+        action: Action type (1=delete, 2=mark_read, 3=flag, 4=move, 5=copy).
+        folder: Folder to apply rule to.
+        filter_to: Filter by To address.
+        filter_from: Filter by From address.
+        filter_subject: Filter by subject.
+        filter_attachment_filename: Filter by attachment filename.
+        maximum_age: Maximum age of messages in days.
+        order: Rule order.
         assign_title: Title template to assign.
-        assign_tags: Comma-separated list of tag IDs to assign.
-        assign_correspondent: ID of correspondent to assign.
-        assign_document_type: ID of document type to assign.
-        assign_storage_path: ID of storage path to assign.
-        assign_owner: ID of owner user to assign.
+        assign_tags: Tag IDs to assign.
+        assign_correspondent: Correspondent ID to assign.
+        assign_document_type: Document type ID to assign.
+        assign_storage_path: Storage path ID to assign.
+        assign_owner: Owner user ID to assign.
     """
     tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
     params = CreateMailRuleParam(
@@ -1799,23 +1834,23 @@ async def update_mail_rule(
     """Update an existing mail rule.
 
     Args:
-        id: The unique ID of the mail rule to update (required).
-        name: New name.
-        account: New mail account ID.
-        action: New action type.
-        folder: New folder.
+        id: ID of the mail rule.
+        name: Name of the mail rule.
+        account: Mail account ID.
+        action: Action type.
+        folder: Folder to apply rule to.
         filter_to: Filter by To address.
         filter_from: Filter by From address.
         filter_subject: Filter by subject.
         filter_attachment_filename: Filter by attachment filename.
         maximum_age: Maximum age of messages in days.
-        order: New rule order.
+        order: Rule order.
         assign_title: Title template to assign.
-        assign_tags: Comma-separated list of tag IDs to assign.
-        assign_correspondent: ID of correspondent to assign.
-        assign_document_type: ID of document type to assign.
-        assign_storage_path: ID of storage path to assign.
-        assign_owner: ID of owner user to assign.
+        assign_tags: Tag IDs to assign.
+        assign_correspondent: Correspondent ID to assign.
+        assign_document_type: Document type ID to assign.
+        assign_storage_path: Storage path ID to assign.
+        assign_owner: Owner user ID to assign.
     """
     tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
     params = UpdateMailRuleParam(
@@ -1843,7 +1878,7 @@ async def delete_mail_rule_by_id(
     """Delete a mail rule by ID.
 
     Args:
-        id: The unique ID of the mail rule to delete (required).
+        id: ID of the mail rule.
     """
     return await get_client().delete_mail_rule_by_id(id, get_user_token())
 
@@ -1862,9 +1897,9 @@ async def search_documents(
     """Search across documents.
 
     Args:
-        query: Search keyword or phrase (required).
-        limit: Maximum number of results. Defaults to 50.
-        db_only: When True, search database only (no full-text index). Defaults to False.
+        query: Search keyword or phrase.
+        limit: Maximum number of results.
+        db_only: Search database only (no full-text index).
     """
     data = await get_client().search_documents(query, get_user_token(), limit=limit, db_only=db_only)
     return {"results": json_to_toon(data)}
@@ -1879,8 +1914,8 @@ async def search_autocomplete(
     """Get search autocomplete suggestions.
 
     Args:
-        term: The search term prefix (required).
-        limit: Maximum number of suggestions. Defaults to 10.
+        term: The search term prefix.
+        limit: Maximum number of suggestions.
     """
     data = await get_client().search_autocomplete(term, get_user_token(), limit=limit)
     return {"suggestions": data}

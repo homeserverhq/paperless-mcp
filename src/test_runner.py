@@ -741,11 +741,11 @@ async def main():
                   {"id": doc_id})
 
         await run(session, "T71 bulk_update_documents", "bulk_update_documents",
-                  {"documents": str(doc_id), "method": "set_correspondent",
-                   "parameters": '{"correspondent": null}'})
+                  {"documents": [doc_id], "method": "set_correspondent",
+                   "parameters": {"correspondent": None}})
 
         await run(session, "T72 reprocess_documents", "reprocess_documents",
-                  {"documents": str(doc_id)})
+                  {"documents": [doc_id]})
 
         await run(session, "T73 create_temp_custom_field", "create_custom_field",
                   {"name": f"t{rid}-AssignField", "data_type": "string"})
@@ -754,10 +754,10 @@ async def main():
 
         temp_field_id = pick_id(state, "temp_field")
         await run(session, "T74 assign_custom_field", "assign_custom_field",
-                  {"documents": str(doc_id), "field_id": temp_field_id,
+                  {"documents": [doc_id], "field_id": temp_field_id,
                    "value": "test-value"})
         await run(session, "T75 remove_custom_field", "assign_custom_field",
-                  {"documents": str(doc_id), "field_id": temp_field_id,
+                  {"documents": [doc_id], "field_id": temp_field_id,
                    "remove": True})
         await run(session, "T76 delete_temp_custom_field", "delete_custom_field_by_id",
                   {"id": temp_field_id})
