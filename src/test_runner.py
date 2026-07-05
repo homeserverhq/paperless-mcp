@@ -370,7 +370,7 @@ def resolve_mail_rule_params(state: dict) -> dict[str, Any]:
     return {
         "name": f"t{rid}-MailRule",
         "account": acct_id,
-        "action": 1,
+        "action": "delete",
         "folder": "INBOX",
     }
 
@@ -677,7 +677,7 @@ async def main():
 
         gid = pick_id(state, "mailrule_get") or pick_id(state, "mailrule")
         await run(session, "T56 update_mail_rule", "update_mail_rule",
-                  {"id": gid, "action": 3})
+                  {"id": gid, "action": "flag"})
         assert_content("T56 update_mail_rule", results[-1].get("data", {}), ["id"])
 
         await run(session, "T57 delete_mail_rule", "delete_mail_rule_by_id",

@@ -15,6 +15,11 @@ _current_user_token: ContextVar[Optional[str]] = ContextVar("current_user_token"
 ALLOW_ALL_AGGREGATE = os.getenv("ALLOW_ALL_AGGREGATE", "false").lower() in ("true", "1", "yes")
 PAPERLESS_PUBLIC_URL = os.getenv("PAPERLESS_PUBLIC_URL", "").rstrip("/")
 
+_IMAP_SECURITY_MAP = {"none": 1, "ssl_tls": 2, "starttls": 3}
+_MAIL_RULE_ACTION_MAP = {"delete": 1, "mark_read": 2, "flag": 3, "move": 4, "copy": 5}
+_WORKFLOW_ACTION_MAP = {"assign": 1, "remove": 2, "email": 3, "webhook": 4, "remove_password": 5, "trash": 6}
+_WORKFLOW_TRIGGER_MAP = {"consumption_started": 1, "document_added": 2, "document_updated": 3, "scheduled": 4}
+
 
 class AuthMiddleware:
     def __init__(self, app):
@@ -273,7 +278,7 @@ class UpdateMailRuleParam(BaseModel):
 
 class WorkflowTrigger(BaseModel):
     """A workflow trigger that activates the workflow."""
-    type: int = Field(default=1, description="Trigger type. 1 = watching for files.")
+    type: str = Field(default="consumption_started", description="consumption_started, document_added, document_updated, or scheduled.")
     filter_path: str = Field(default="/*", description="Glob pattern for file paths to match.")
 
 
@@ -516,7 +521,7 @@ async def bulk_update_documents(
 
     Args:
         documents: Document IDs to update.
-        method: Bulk edit method. One of: set_correspondent, set_document_type, set_storage_path, add_tag, remove_tag, modify_tags, modify_custom_fields, delete.
+        method: set_correspondent, set_document_type, set_storage_path, add_tag, remove_tag, modify_tags, modify_custom_fields, or delete.
         parameters: Method-specific parameters.
         all: Apply to all documents matching filters instead of the documents list.
         filters: Filter criteria for bulk operations.
@@ -1260,7 +1265,7 @@ async def create_custom_field(
 
     Args:
         name: Name of the custom field.
-        data_type: Data type (string, number, boolean, date, documentlink, select, monetary).
+        data_type: string, url, date, boolean, integer, float, monetary, documentlink, select, or longtext.
         extra_data: Extra configuration for the field.
     """
     parsed_extra = json.loads(extra_data)
@@ -1283,7 +1288,7 @@ async def update_custom_field(
     Args:
         id: ID of the custom field.
         name: Name of the custom field.
-        data_type: Data type.
+        data_type: string, url, date, boolean, integer, float, monetary, documentlink, select, or longtext.
         extra_data: Extra configuration for the field.
     """
     parsed_extra = json.loads(extra_data) if extra_data else None
@@ -1443,7 +1448,7 @@ async def create_share_link(
     Args:
         document: ID of the document to share.
         expiration: ISO 8601 format (2026-06-22T15:00:00-04:00).
-        file_version: File version to share.
+        file_version: archive or original.
     """
     params = CreateShareLinkParam(
         document=document, expiration=expiration, file_version=file_version,
@@ -1509,7 +1514,7 @@ async def get_workflow_by_id(
 async def create_workflow(
     name: str,
     triggers: list[WorkflowTrigger] = [WorkflowTrigger()],
-    actions: list[int] = [1],
+    actions: list[str] = ["assign"],
     order: int = 1,
     enabled: bool = True,
     ctx: Context = None
@@ -1519,12 +1524,12 @@ async def create_workflow(
     Args:
         name: Name of the workflow.
         triggers: Trigger definitions.
-        actions: Action type IDs.
+        actions: assign, remove, email, webhook, remove_password, or trash.
         order: Display order.
         enabled: Workflow is enabled.
     """
-    parsed_triggers = [t.model_dump() for t in triggers]
-    parsed_actions = [{"type": a} for a in actions]
+    parsed_triggers = [{"type": _WORKFLOW_TRIGGER_MAP.get(t.type, t.type), "filter_path": t.filter_path} for t in triggers]
+    parsed_actions = [{"type": _WORKFLOW_ACTION_MAP.get(a, a)} for a in actions]
     params = CreateWorkflowParam(
         name=name, order=order, enabled=enabled,
     )
@@ -1540,8 +1545,8 @@ async def create_workflow(
 async def update_workflow(
     id: int,
     name: Optional[str] = None,
-    triggers: Optional[str] = None,
-    actions: Optional[str] = None,
+    triggers: Optional[list[WorkflowTrigger]] = None,
+    actions: Optional[list[str]] = None,
     order: Optional[int] = None,
     enabled: Optional[bool] = None,
     ctx: Context = None
@@ -1552,15 +1557,14 @@ async def update_workflow(
         id: ID of the workflow.
         name: Name of the workflow.
         triggers: Trigger definitions.
-        actions: Action type IDs.
+        actions: assign, remove, email, webhook, remove_password, or trash.
         order: Display order.
         enabled: Workflow is enabled.
     """
-    parsed_triggers = json.loads(triggers) if triggers else None
-    parsed_actions = json.loads(actions) if actions else None
+    parsed_triggers = [{"type": _WORKFLOW_TRIGGER_MAP.get(t.type, t.type), "filter_path": t.filter_path} for t in triggers] if triggers else None
+    parsed_actions = [{"type": _WORKFLOW_ACTION_MAP.get(a, a)} for a in actions] if actions else None
     params = UpdateWorkflowParam(
         id=id, name=name, order=order, enabled=enabled,
-        triggers=triggers, actions=actions,
     )
     payload = params.model_dump(exclude_unset=True, exclude={"id"}, exclude_none=True)
     if parsed_triggers is not None:
@@ -1631,7 +1635,7 @@ async def create_mail_account(
     password: str,
     imap_server: str = "imap.gmail.com",
     imap_port: int = 993,
-    imap_security: int = 2,
+    imap_security: str = "ssl_tls",
     character_set: str = "UTF-8",
     folder: str = "INBOX",
     is_active: bool = True,
@@ -1645,15 +1649,16 @@ async def create_mail_account(
         password: Password for the mail account.
         imap_server: IMAP server hostname.
         imap_port: IMAP server port.
-        imap_security: IMAP security type. 1=None, 2=SSL/TLS, 3=STARTTLS.
+        imap_security: none, ssl_tls, or starttls.
         character_set: Character set.
         folder: Mail folder to monitor.
         is_active: Account is active.
     """
+    imap_security_int = _IMAP_SECURITY_MAP.get(imap_security, imap_security)
     params = CreateMailAccountParam(
         name=name, username=username, password=password,
         imap_server=imap_server, imap_port=imap_port,
-        imap_security=imap_security, character_set=character_set,
+        imap_security=imap_security_int, character_set=character_set,
         folder=folder, is_active=is_active,
     )
     return await get_client().create_mail_account(
@@ -1669,7 +1674,7 @@ async def update_mail_account(
     password: Optional[str] = None,
     imap_server: Optional[str] = None,
     imap_port: Optional[int] = None,
-    imap_security: Optional[int] = None,
+    imap_security: Optional[str] = None,
     character_set: Optional[str] = None,
     folder: Optional[str] = None,
     is_active: Optional[bool] = None,
@@ -1684,15 +1689,16 @@ async def update_mail_account(
         password: Password.
         imap_server: IMAP server hostname.
         imap_port: IMAP server port.
-        imap_security: IMAP security type.
+        imap_security: none, ssl_tls, or starttls.
         character_set: Character set.
         folder: Mail folder.
         is_active: Account is active.
     """
+    imap_security_int = _IMAP_SECURITY_MAP.get(imap_security, imap_security) if imap_security is not None else None
     params = UpdateMailAccountParam(
         id=id, name=name, username=username, password=password,
         imap_server=imap_server, imap_port=imap_port,
-        imap_security=imap_security, character_set=character_set,
+        imap_security=imap_security_int, character_set=character_set,
         folder=folder, is_active=is_active,
     )
     return await get_client().update_mail_account(
@@ -1756,7 +1762,7 @@ async def get_mail_rule_by_id(
 async def create_mail_rule(
     name: str,
     account: int,
-    action: int,
+    action: str,
     folder: str,
     filter_to: str = "*",
     filter_from: str = "*",
@@ -1777,7 +1783,7 @@ async def create_mail_rule(
     Args:
         name: Name of the mail rule.
         account: ID of the mail account.
-        action: Action type (1=delete, 2=mark_read, 3=flag, 4=move, 5=copy).
+        action: delete, mark_read, flag, move, or copy.
         folder: Folder to apply rule to.
         filter_to: Filter by To address.
         filter_from: Filter by From address.
@@ -1792,9 +1798,10 @@ async def create_mail_rule(
         assign_storage_path: Storage path ID to assign.
         assign_owner: Owner user ID to assign.
     """
+    action_int = _MAIL_RULE_ACTION_MAP.get(action, action)
     tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
     params = CreateMailRuleParam(
-        name=name, account=account, action=action, folder=folder,
+        name=name, account=account, action=action_int, folder=folder,
         filter_to=filter_to, filter_from=filter_from,
         filter_subject=filter_subject,
         filter_attachment_filename=filter_attachment_filename,
@@ -1815,7 +1822,7 @@ async def update_mail_rule(
     id: int,
     name: Optional[str] = None,
     account: Optional[int] = None,
-    action: Optional[int] = None,
+    action: Optional[str] = None,
     folder: Optional[str] = None,
     filter_to: Optional[str] = None,
     filter_from: Optional[str] = None,
@@ -1837,7 +1844,7 @@ async def update_mail_rule(
         id: ID of the mail rule.
         name: Name of the mail rule.
         account: Mail account ID.
-        action: Action type.
+        action: delete, mark_read, flag, move, or copy.
         folder: Folder to apply rule to.
         filter_to: Filter by To address.
         filter_from: Filter by From address.
@@ -1852,9 +1859,10 @@ async def update_mail_rule(
         assign_storage_path: Storage path ID to assign.
         assign_owner: Owner user ID to assign.
     """
+    action_int = _MAIL_RULE_ACTION_MAP.get(action, action) if action is not None else None
     tag_list = [int(t.strip()) for t in assign_tags.split(",")] if assign_tags is not None else None
     params = UpdateMailRuleParam(
-        id=id, name=name, account=account, action=action, folder=folder,
+        id=id, name=name, account=account, action=action_int, folder=folder,
         filter_to=filter_to, filter_from=filter_from,
         filter_subject=filter_subject,
         filter_attachment_filename=filter_attachment_filename,
