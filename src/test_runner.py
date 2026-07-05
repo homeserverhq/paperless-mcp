@@ -37,11 +37,11 @@ results: list[dict[str, Any]] = []
 
 
 # =============================================================================
-# MCP Session (transport layer — internal conditionals are implementation detail)
+# MCP Session (transport layer — adaptive, detects stateful vs stateless)
 # =============================================================================
 
 class MCPSession:
-    """MCP Streamable HTTP client using JSON-RPC over HTTP POST (stateful sessions)."""
+    """MCP Streamable HTTP client. Detects stateful/stateless from response headers."""
 
     def __init__(self, url: str, headers: dict[str, str]):
         self.url = url
@@ -50,10 +50,16 @@ class MCPSession:
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
         }
-        self.session_headers = dict(self.base_headers)
+        self.headers = dict(self.base_headers)
         self.client = httpx.AsyncClient(timeout=120.0)
         self._request_id = 0
         self._session_id: str | None = None
+
+    def _capture_session(self, response) -> None:
+        sid = response.headers.get("mcp-session-id")
+        if sid:
+            self._session_id = sid
+            self.headers = {**self.base_headers, "mcp-session-id": sid}
 
     async def __aenter__(self):
         await self._initialize()
@@ -66,7 +72,8 @@ class MCPSession:
         payload = {"jsonrpc": "2.0", "method": method}
         if params:
             payload["params"] = params
-        response = await self.client.post(self.url, headers=self.session_headers, json=payload)
+        response = await self.client.post(self.url, headers=self.headers, json=payload)
+        self._capture_session(response)
         if response.status_code not in (200, 202):
             response.raise_for_status()
 
@@ -75,15 +82,12 @@ class MCPSession:
         payload = {"jsonrpc": "2.0", "id": self._request_id, "method": method}
         if params:
             payload["params"] = params
-        response = await self.client.post(self.url, headers=self.session_headers, json=payload)
+        response = await self.client.post(self.url, headers=self.headers, json=payload)
         if response.status_code == 202:
             return {}
         response.raise_for_status()
 
-        sid = response.headers.get("mcp-session-id")
-        if sid:
-            self._session_id = sid
-            self.session_headers = {**self.base_headers, "mcp-session-id": sid}
+        self._capture_session(response)
 
         data = response.json()
         if isinstance(data, list):
