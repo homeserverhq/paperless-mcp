@@ -342,7 +342,7 @@ class CustomFieldExtraData(BaseModel):
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_documents(
+async def list_all_documents(
     include_all_fields: bool = False,
     page: int = 1,
     page_size: int = 500,
@@ -355,7 +355,7 @@ async def get_all_documents(
         page: Page number for paginated results.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_documents(
+    data = await get_client().list_all_documents(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page=page,
@@ -365,7 +365,7 @@ async def get_all_documents(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_document_by_id(
+async def get_document(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -376,7 +376,7 @@ async def get_document_by_id(
         id: ID of the document.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_document_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_document(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -423,7 +423,7 @@ async def update_document(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_document_by_id(
+async def delete_document(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -432,7 +432,7 @@ async def delete_document_by_id(
     Args:
         id: ID of the document.
     """
-    return await get_client().delete_document_by_id(id, get_user_token())
+    return await get_client().delete_document(id, get_user_token())
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
@@ -612,7 +612,7 @@ async def assign_custom_field(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_document_notes(
+async def list_notes_by_document(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -621,7 +621,7 @@ async def get_document_notes(
     Args:
         id: ID of the document.
     """
-    data = await get_client().get_document_notes(id, get_user_token())
+    data = await get_client().list_notes_by_document(id, get_user_token())
     return {"notes": data}
 
 
@@ -665,7 +665,7 @@ async def delete_document_note(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_correspondents(
+async def list_all_correspondents(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -676,7 +676,7 @@ async def get_all_correspondents(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_correspondents(
+    data = await get_client().list_all_correspondents(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -685,7 +685,7 @@ async def get_all_correspondents(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_correspondent_by_id(
+async def get_correspondent(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -696,7 +696,7 @@ async def get_correspondent_by_id(
         id: ID of the correspondent.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_correspondent_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_correspondent(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -760,7 +760,7 @@ async def update_correspondent(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_correspondent_by_id(
+async def delete_correspondent(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -769,7 +769,7 @@ async def delete_correspondent_by_id(
     Args:
         id: ID of the correspondent.
     """
-    return await get_client().delete_correspondent_by_id(id, get_user_token())
+    return await get_client().delete_correspondent(id, get_user_token())
 
 
 # =============================================================================
@@ -777,7 +777,7 @@ async def delete_correspondent_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_document_types(
+async def list_all_document_types(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -788,7 +788,7 @@ async def get_all_document_types(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_document_types(
+    data = await get_client().list_all_document_types(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -797,7 +797,7 @@ async def get_all_document_types(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_document_type_by_id(
+async def get_document_type(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -808,7 +808,7 @@ async def get_document_type_by_id(
         id: ID of the document type.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_document_type_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_document_type(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -872,7 +872,7 @@ async def update_document_type(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_document_type_by_id(
+async def delete_document_type(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -881,7 +881,7 @@ async def delete_document_type_by_id(
     Args:
         id: ID of the document type.
     """
-    return await get_client().delete_document_type_by_id(id, get_user_token())
+    return await get_client().delete_document_type(id, get_user_token())
 
 
 # =============================================================================
@@ -889,7 +889,7 @@ async def delete_document_type_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_tags(
+async def list_all_tags(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -900,7 +900,7 @@ async def get_all_tags(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_tags(
+    data = await get_client().list_all_tags(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -909,7 +909,7 @@ async def get_all_tags(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_tag_by_id(
+async def get_tag(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -920,7 +920,7 @@ async def get_tag_by_id(
         id: ID of the tag.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_tag_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_tag(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -998,7 +998,7 @@ async def update_tag(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_tag_by_id(
+async def delete_tag(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1007,7 +1007,7 @@ async def delete_tag_by_id(
     Args:
         id: ID of the tag.
     """
-    return await get_client().delete_tag_by_id(id, get_user_token())
+    return await get_client().delete_tag(id, get_user_token())
 
 
 # =============================================================================
@@ -1015,7 +1015,7 @@ async def delete_tag_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_storage_paths(
+async def list_all_storage_paths(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1026,7 +1026,7 @@ async def get_all_storage_paths(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_storage_paths(
+    data = await get_client().list_all_storage_paths(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1035,7 +1035,7 @@ async def get_all_storage_paths(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_storage_path_by_id(
+async def get_storage_path(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1046,7 +1046,7 @@ async def get_storage_path_by_id(
         id: ID of the storage path.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_storage_path_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_storage_path(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -1114,7 +1114,7 @@ async def update_storage_path(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_storage_path_by_id(
+async def delete_storage_path(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1123,7 +1123,7 @@ async def delete_storage_path_by_id(
     Args:
         id: ID of the storage path.
     """
-    return await get_client().delete_storage_path_by_id(id, get_user_token())
+    return await get_client().delete_storage_path(id, get_user_token())
 
 
 # =============================================================================
@@ -1131,7 +1131,7 @@ async def delete_storage_path_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
-async def get_all_saved_views(
+async def list_all_saved_views(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1142,7 +1142,7 @@ async def get_all_saved_views(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_saved_views(
+    data = await get_client().list_all_saved_views(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1151,7 +1151,7 @@ async def get_all_saved_views(
 
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
-async def get_saved_view_by_id(
+async def get_saved_view(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1162,7 +1162,7 @@ async def get_saved_view_by_id(
         id: ID of the saved view.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_saved_view_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_saved_view(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "advanced", "paperless"})
@@ -1236,7 +1236,7 @@ async def update_saved_view(
 
 
 @mcp.tool(tags={"write", "advanced", "paperless"})
-async def delete_saved_view_by_id(
+async def delete_saved_view(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1245,7 +1245,7 @@ async def delete_saved_view_by_id(
     Args:
         id: ID of the saved view.
     """
-    return await get_client().delete_saved_view_by_id(id, get_user_token())
+    return await get_client().delete_saved_view(id, get_user_token())
 
 
 # =============================================================================
@@ -1253,7 +1253,7 @@ async def delete_saved_view_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
-async def get_all_custom_fields(
+async def list_all_custom_fields(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1264,7 +1264,7 @@ async def get_all_custom_fields(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_custom_fields(
+    data = await get_client().list_all_custom_fields(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1273,7 +1273,7 @@ async def get_all_custom_fields(
 
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
-async def get_custom_field_by_id(
+async def get_custom_field(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1284,7 +1284,7 @@ async def get_custom_field_by_id(
         id: ID of the custom field.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_custom_field_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_custom_field(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "advanced", "paperless"})
@@ -1336,7 +1336,7 @@ async def update_custom_field(
 
 
 @mcp.tool(tags={"write", "advanced", "paperless"})
-async def delete_custom_field_by_id(
+async def delete_custom_field(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1345,7 +1345,7 @@ async def delete_custom_field_by_id(
     Args:
         id: ID of the custom field.
     """
-    return await get_client().delete_custom_field_by_id(id, get_user_token())
+    return await get_client().delete_custom_field(id, get_user_token())
 
 
 # =============================================================================
@@ -1353,7 +1353,7 @@ async def delete_custom_field_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_tasks(
+async def list_all_tasks(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1364,7 +1364,7 @@ async def get_all_tasks(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_tasks(
+    data = await get_client().list_all_tasks(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1373,7 +1373,7 @@ async def get_all_tasks(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_task_by_id(
+async def get_task(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1384,7 +1384,7 @@ async def get_task_by_id(
         id: ID of the task.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_task_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_task(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
@@ -1408,9 +1408,9 @@ async def get_task_status_counts(ctx: Context = None) -> dict[str, Any]:
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_active_tasks(ctx: Context = None) -> dict[str, Any]:
+async def list_active_tasks(ctx: Context = None) -> dict[str, Any]:
     """Get currently pending or running tasks."""
-    data = await get_client().get_active_tasks(get_user_token())
+    data = await get_client().list_active_tasks(get_user_token())
     return {"active_tasks": data}
 
 
@@ -1437,7 +1437,7 @@ async def acknowledge_tasks(
 # =============================================================================
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
-async def get_all_share_links(
+async def list_all_share_links(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1448,7 +1448,7 @@ async def get_all_share_links(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_share_links(
+    data = await get_client().list_all_share_links(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1457,7 +1457,7 @@ async def get_all_share_links(
 
 
 @mcp.tool(tags={"read", "advanced", "paperless"})
-async def get_share_link_by_id(
+async def get_share_link(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1468,7 +1468,7 @@ async def get_share_link_by_id(
         id: ID of the share link.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_share_link_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_share_link(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "advanced", "paperless"})
@@ -1495,7 +1495,7 @@ async def create_share_link(
 
 
 @mcp.tool(tags={"write", "advanced", "paperless"})
-async def delete_share_link_by_id(
+async def delete_share_link(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1504,7 +1504,7 @@ async def delete_share_link_by_id(
     Args:
         id: ID of the share link.
     """
-    return await get_client().delete_share_link_by_id(id, get_user_token())
+    return await get_client().delete_share_link(id, get_user_token())
 
 
 # =============================================================================
@@ -1512,7 +1512,7 @@ async def delete_share_link_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_workflows(
+async def list_all_workflows(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1523,7 +1523,7 @@ async def get_all_workflows(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_workflows(
+    data = await get_client().list_all_workflows(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1532,7 +1532,7 @@ async def get_all_workflows(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_workflow_by_id(
+async def get_workflow(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1543,7 +1543,7 @@ async def get_workflow_by_id(
         id: ID of the workflow.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_workflow_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_workflow(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -1615,7 +1615,7 @@ async def update_workflow(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_workflow_by_id(
+async def delete_workflow(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1624,7 +1624,7 @@ async def delete_workflow_by_id(
     Args:
         id: ID of the workflow.
     """
-    return await get_client().delete_workflow_by_id(id, get_user_token())
+    return await get_client().delete_workflow(id, get_user_token())
 
 
 # =============================================================================
@@ -1632,7 +1632,7 @@ async def delete_workflow_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_mail_accounts(
+async def list_all_mail_accounts(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1643,7 +1643,7 @@ async def get_all_mail_accounts(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_mail_accounts(
+    data = await get_client().list_all_mail_accounts(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1652,7 +1652,7 @@ async def get_all_mail_accounts(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_mail_account_by_id(
+async def get_mail_account(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1663,7 +1663,7 @@ async def get_mail_account_by_id(
         id: ID of the mail account.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_mail_account_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_mail_account(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -1747,7 +1747,7 @@ async def update_mail_account(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_mail_account_by_id(
+async def delete_mail_account(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1756,7 +1756,7 @@ async def delete_mail_account_by_id(
     Args:
         id: ID of the mail account.
     """
-    return await get_client().delete_mail_account_by_id(id, get_user_token())
+    return await get_client().delete_mail_account(id, get_user_token())
 
 
 # =============================================================================
@@ -1764,7 +1764,7 @@ async def delete_mail_account_by_id(
 # =============================================================================
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_all_mail_rules(
+async def list_all_mail_rules(
     include_all_fields: bool = False,
     page_size: int = 500,
     ctx: Context = None
@@ -1775,7 +1775,7 @@ async def get_all_mail_rules(
         include_all_fields: Default False (common fields only). Set True for all fields.
         page_size: Number of results per page.
     """
-    data = await get_client().get_all_mail_rules(
+    data = await get_client().list_all_mail_rules(
         get_user_token(),
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
@@ -1784,7 +1784,7 @@ async def get_all_mail_rules(
 
 
 @mcp.tool(tags={"read", "primary", "paperless"})
-async def get_mail_rule_by_id(
+async def get_mail_rule(
     id: int,
     include_all_fields: bool = False,
     ctx: Context = None
@@ -1795,7 +1795,7 @@ async def get_mail_rule_by_id(
         id: ID of the mail rule.
         include_all_fields: Default False (common fields only). Set True for all fields.
     """
-    return await get_client().get_mail_rule_by_id(id, get_user_token(), include_all_fields=include_all_fields)
+    return await get_client().get_mail_rule(id, get_user_token(), include_all_fields=include_all_fields)
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
@@ -1923,7 +1923,7 @@ async def update_mail_rule(
 
 
 @mcp.tool(tags={"write", "primary", "paperless"})
-async def delete_mail_rule_by_id(
+async def delete_mail_rule(
     id: int,
     ctx: Context = None
 ) -> dict[str, Any]:
@@ -1932,7 +1932,7 @@ async def delete_mail_rule_by_id(
     Args:
         id: ID of the mail rule.
     """
-    return await get_client().delete_mail_rule_by_id(id, get_user_token())
+    return await get_client().delete_mail_rule(id, get_user_token())
 
 
 # =============================================================================

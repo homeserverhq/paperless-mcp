@@ -438,31 +438,31 @@ async def main():
         # Phase 2: List Tools
         # ==================================================================
         log("\n=== Phase 2: List Tools ===")
-        await run(session, "T04 list_correspondents", "get_all_correspondents")
+        await run(session, "T04 list_correspondents", "list_all_correspondents")
         assert_content("T04 list_correspondents", results[-1].get("data", {}), ["correspondents"])
 
-        await run(session, "T05 list_document_types", "get_all_document_types")
+        await run(session, "T05 list_document_types", "list_all_document_types")
         assert_content("T05 list_document_types", results[-1].get("data", {}), ["document_types"])
 
-        await run(session, "T06 list_tags", "get_all_tags")
+        await run(session, "T06 list_tags", "list_all_tags")
         assert_content("T06 list_tags", results[-1].get("data", {}), ["tags"])
 
-        await run(session, "T07 list_storage_paths", "get_all_storage_paths")
+        await run(session, "T07 list_storage_paths", "list_all_storage_paths")
         assert_content("T07 list_storage_paths", results[-1].get("data", {}), ["storage_paths"])
 
-        await run(session, "T08 list_saved_views", "get_all_saved_views")
+        await run(session, "T08 list_saved_views", "list_all_saved_views")
         assert_content("T08 list_saved_views", results[-1].get("data", {}), ["saved_views"])
 
-        await run(session, "T09 list_custom_fields", "get_all_custom_fields")
+        await run(session, "T09 list_custom_fields", "list_all_custom_fields")
         assert_content("T09 list_custom_fields", results[-1].get("data", {}), ["custom_fields"])
 
-        await run(session, "T10 list_workflows", "get_all_workflows")
+        await run(session, "T10 list_workflows", "list_all_workflows")
         assert_content("T10 list_workflows", results[-1].get("data", {}), ["workflows"])
 
-        await run(session, "T11 list_mail_accounts", "get_all_mail_accounts")
+        await run(session, "T11 list_mail_accounts", "list_all_mail_accounts")
         assert_content("T11 list_mail_accounts", results[-1].get("data", {}), ["mail_accounts"])
 
-        await run(session, "T12 list_mail_rules", "get_all_mail_rules")
+        await run(session, "T12 list_mail_rules", "list_all_mail_rules")
         assert_content("T12 list_mail_rules", results[-1].get("data", {}), ["mail_rules"])
 
         # ==================================================================
@@ -475,7 +475,7 @@ async def main():
         store_on_pass("T13 create_correspondent", None, state, "correspondent")
         assert_id_valid("T13 create_correspondent", state.get("correspondent", {}))
 
-        await run(session, "T14 get_correspondent", "get_correspondent_by_id",
+        await run(session, "T14 get_correspondent", "get_correspondent",
                   {"id": pick_id(state, "correspondent")})
         store_on_pass("T14 get_correspondent", None, state, "correspondent_get")
         assert_content("T14 get_correspondent", state.get("correspondent_get", {}), ["id", "name"])
@@ -485,10 +485,10 @@ async def main():
                   {"id": gid, "name": f"t{rid}-Correspondent-updated"})
         assert_content("T15 update_correspondent", results[-1].get("data", {}), ["id", "name"])
 
-        await run(session, "T16 delete_correspondent", "delete_correspondent_by_id",
+        await run(session, "T16 delete_correspondent", "delete_correspondent",
                   {"id": gid})
         await run_verify_or_skip(session, "T17 verify_delete_correspondent",
-                  "get_correspondent_by_id", "T13 create_correspondent", {"id": gid})
+                  "get_correspondent", "T13 create_correspondent", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — DocumentType
@@ -499,7 +499,7 @@ async def main():
         store_on_pass("T18 create_document_type", None, state, "documenttype")
         assert_id_valid("T18 create_document_type", state.get("documenttype", {}))
 
-        await run(session, "T19 get_document_type", "get_document_type_by_id",
+        await run(session, "T19 get_document_type", "get_document_type",
                   {"id": pick_id(state, "documenttype")})
         store_on_pass("T19 get_document_type", None, state, "documenttype_get")
         assert_content("T19 get_document_type", state.get("documenttype_get", {}), ["id", "name"])
@@ -509,10 +509,10 @@ async def main():
                   {"id": gid, "name": f"t{rid}-DocType-updated"})
         assert_content("T20 update_document_type", results[-1].get("data", {}), ["id", "name"])
 
-        await run(session, "T21 delete_document_type", "delete_document_type_by_id",
+        await run(session, "T21 delete_document_type", "delete_document_type",
                   {"id": gid})
         await run_verify_or_skip(session, "T22 verify_delete_document_type",
-                  "get_document_type_by_id", "T18 create_document_type", {"id": gid})
+                  "get_document_type", "T18 create_document_type", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — Tag
@@ -523,7 +523,7 @@ async def main():
         store_on_pass("T23 create_tag", None, state, "tag")
         assert_id_valid("T23 create_tag", state.get("tag", {}))
 
-        await run(session, "T24 get_tag", "get_tag_by_id",
+        await run(session, "T24 get_tag", "get_tag",
                   {"id": pick_id(state, "tag")})
         store_on_pass("T24 get_tag", None, state, "tag_get")
         assert_content("T24 get_tag", state.get("tag_get", {}), ["id", "name"])
@@ -533,10 +533,10 @@ async def main():
                   {"id": gid, "color": "#b2df8a"})
         assert_content("T25 update_tag", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T26 delete_tag", "delete_tag_by_id",
+        await run(session, "T26 delete_tag", "delete_tag",
                   {"id": gid})
         await run_verify_or_skip(session, "T27 verify_delete_tag",
-                  "get_tag_by_id", "T23 create_tag", {"id": gid})
+                  "get_tag", "T23 create_tag", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — StoragePath
@@ -547,7 +547,7 @@ async def main():
         store_on_pass("T28 create_storage_path", None, state, "storagespath")
         assert_id_valid("T28 create_storage_path", state.get("storagespath", {}))
 
-        await run(session, "T29 get_storage_path", "get_storage_path_by_id",
+        await run(session, "T29 get_storage_path", "get_storage_path",
                   {"id": pick_id(state, "storagespath")})
         store_on_pass("T29 get_storage_path", None, state, "storagespath_get")
         assert_content("T29 get_storage_path", state.get("storagespath_get", {}), ["id", "name"])
@@ -557,10 +557,10 @@ async def main():
                   {"id": gid, "path": "{asn}"})
         assert_content("T30 update_storage_path", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T31 delete_storage_path", "delete_storage_path_by_id",
+        await run(session, "T31 delete_storage_path", "delete_storage_path",
                   {"id": gid})
         await run_verify_or_skip(session, "T32 verify_delete_storage_path",
-                  "get_storage_path_by_id", "T28 create_storage_path", {"id": gid})
+                  "get_storage_path", "T28 create_storage_path", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — SavedView
@@ -571,7 +571,7 @@ async def main():
         store_on_pass("T33 create_saved_view", None, state, "savedview")
         assert_id_valid("T33 create_saved_view", state.get("savedview", {}))
 
-        await run(session, "T34 get_saved_view", "get_saved_view_by_id",
+        await run(session, "T34 get_saved_view", "get_saved_view",
                   {"id": pick_id(state, "savedview")})
         store_on_pass("T34 get_saved_view", None, state, "savedview_get")
         assert_content("T34 get_saved_view", state.get("savedview_get", {}), ["id", "name"])
@@ -581,10 +581,10 @@ async def main():
                   {"id": gid, "show_on_dashboard": True})
         assert_content("T35 update_saved_view", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T36 delete_saved_view", "delete_saved_view_by_id",
+        await run(session, "T36 delete_saved_view", "delete_saved_view",
                   {"id": gid})
         await run_verify_or_skip(session, "T37 verify_delete_saved_view",
-                  "get_saved_view_by_id", "T33 create_saved_view", {"id": gid})
+                  "get_saved_view", "T33 create_saved_view", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — CustomField
@@ -595,7 +595,7 @@ async def main():
         store_on_pass("T38 create_custom_field", None, state, "customfield")
         assert_id_valid("T38 create_custom_field", state.get("customfield", {}))
 
-        await run(session, "T39 get_custom_field", "get_custom_field_by_id",
+        await run(session, "T39 get_custom_field", "get_custom_field",
                   {"id": pick_id(state, "customfield")})
         store_on_pass("T39 get_custom_field", None, state, "customfield_get")
         assert_content("T39 get_custom_field", state.get("customfield_get", {}), ["id", "name"])
@@ -605,10 +605,10 @@ async def main():
                   {"id": gid, "name": f"t{rid}-CustomField-updated"})
         assert_content("T40 update_custom_field", results[-1].get("data", {}), ["id", "name"])
 
-        await run(session, "T41 delete_custom_field", "delete_custom_field_by_id",
+        await run(session, "T41 delete_custom_field", "delete_custom_field",
                   {"id": gid})
         await run_verify_or_skip(session, "T42 verify_delete_custom_field",
-                  "get_custom_field_by_id", "T38 create_custom_field", {"id": gid})
+                  "get_custom_field", "T38 create_custom_field", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — Workflow
@@ -619,7 +619,7 @@ async def main():
         store_on_pass("T43 create_workflow", None, state, "workflow")
         assert_id_valid("T43 create_workflow", state.get("workflow", {}))
 
-        await run(session, "T44 get_workflow", "get_workflow_by_id",
+        await run(session, "T44 get_workflow", "get_workflow",
                   {"id": pick_id(state, "workflow")})
         store_on_pass("T44 get_workflow", None, state, "workflow_get")
         assert_content("T44 get_workflow", state.get("workflow_get", {}), ["id", "name"])
@@ -629,10 +629,10 @@ async def main():
                   {"id": gid, "enabled": False})
         assert_content("T45 update_workflow", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T46 delete_workflow", "delete_workflow_by_id",
+        await run(session, "T46 delete_workflow", "delete_workflow",
                   {"id": gid})
         await run_verify_or_skip(session, "T47 verify_delete_workflow",
-                  "get_workflow_by_id", "T43 create_workflow", {"id": gid})
+                  "get_workflow", "T43 create_workflow", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — MailAccount
@@ -644,7 +644,7 @@ async def main():
         store_on_pass("T48 create_mail_account", None, state, "mailaccount")
         assert_id_valid("T48 create_mail_account", state.get("mailaccount", {}))
 
-        await run(session, "T49 get_mail_account", "get_mail_account_by_id",
+        await run(session, "T49 get_mail_account", "get_mail_account",
                   {"id": pick_id(state, "mailaccount")})
         store_on_pass("T49 get_mail_account", None, state, "mailaccount_get")
         assert_content("T49 get_mail_account", state.get("mailaccount_get", {}), ["id", "name"])
@@ -654,10 +654,10 @@ async def main():
                   {"id": gid, "is_active": False})
         assert_content("T50 update_mail_account", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T51 delete_mail_account", "delete_mail_account_by_id",
+        await run(session, "T51 delete_mail_account", "delete_mail_account",
                   {"id": gid})
         await run_verify_or_skip(session, "T52 verify_delete_mail_account",
-                  "get_mail_account_by_id", "T48 create_mail_account", {"id": gid})
+                  "get_mail_account", "T48 create_mail_account", {"id": gid})
 
         # ==================================================================
         # Phase 3: Resource CRUD — MailRule (depends on dep_mailaccount)
@@ -674,7 +674,7 @@ async def main():
         store_on_pass("T54 create_mail_rule", None, state, "mailrule")
         assert_id_valid("T54 create_mail_rule", state.get("mailrule", {}))
 
-        await run(session, "T55 get_mail_rule", "get_mail_rule_by_id",
+        await run(session, "T55 get_mail_rule", "get_mail_rule",
                   {"id": pick_id(state, "mailrule")})
         store_on_pass("T55 get_mail_rule", None, state, "mailrule_get")
         assert_content("T55 get_mail_rule", state.get("mailrule_get", {}), ["id", "name"])
@@ -684,14 +684,14 @@ async def main():
                   {"id": gid, "action": "flag"})
         assert_content("T56 update_mail_rule", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T57 delete_mail_rule", "delete_mail_rule_by_id",
+        await run(session, "T57 delete_mail_rule", "delete_mail_rule",
                   {"id": gid})
         await run_verify_or_skip(session, "T58 verify_delete_mail_rule",
-                  "get_mail_rule_by_id", "T54 create_mail_rule", {"id": gid})
+                  "get_mail_rule", "T54 create_mail_rule", {"id": gid})
 
         # Cleanup dep_mailaccount
         dep_acct_id = pick_id(state, "dep_mailaccount")
-        await run(session, "T58b cleanup_dep_mailaccount", "delete_mail_account_by_id",
+        await run(session, "T58b cleanup_dep_mailaccount", "delete_mail_account",
                   {"id": dep_acct_id})
 
         # ==================================================================
@@ -699,15 +699,15 @@ async def main():
         # ==================================================================
         log("\n=== Phase 4: Document Tools ===")
 
-        await run(session, "T59 get_all_documents", "get_all_documents")
-        store_on_pass("T59 get_all_documents", None, state, "all_documents")
-        assert_content("T59 get_all_documents", results[-1].get("data", {}), ["documents"])
+        await run(session, "T59 list_all_documents", "list_all_documents")
+        store_on_pass("T59 list_all_documents", None, state, "all_documents")
+        assert_content("T59 list_all_documents", results[-1].get("data", {}), ["documents"])
 
         doc_id = state.get("doc_id", 0)
 
-        await run(session, "T60 get_document_by_id", "get_document_by_id",
+        await run(session, "T60 get_document", "get_document",
                   {"id": doc_id})
-        assert_content("T60 get_document_by_id", results[-1].get("data", {}), ["id", "title"])
+        assert_content("T60 get_document", results[-1].get("data", {}), ["id", "title"])
 
         await run(session, "T61 get_document_metadata", "get_document_metadata",
                   {"id": doc_id})
@@ -719,7 +719,7 @@ async def main():
         await run(session, "T63 get_document_ai_suggestions", "get_document_ai_suggestions",
                   {"id": doc_id})
 
-        await run(session, "T64 get_document_notes", "get_document_notes",
+        await run(session, "T64 list_notes_by_document", "list_notes_by_document",
                   {"id": doc_id})
 
         await run(session, "T65 create_document_note", "create_document_note",
@@ -763,7 +763,7 @@ async def main():
         await run(session, "T75 remove_custom_field", "assign_custom_field",
                   {"documents": [doc_id], "field_id": temp_field_id,
                    "remove": True})
-        await run(session, "T76 delete_temp_custom_field", "delete_custom_field_by_id",
+        await run(session, "T76 delete_temp_custom_field", "delete_custom_field",
                   {"id": temp_field_id})
 
         # ==================================================================
@@ -779,20 +779,20 @@ async def main():
         assert_id_valid("T78 create_share_link", state.get("share_link", {}))
 
         share_id = pick_id(state, "share_link")
-        await run(session, "T79 get_share_link", "get_share_link_by_id",
+        await run(session, "T79 get_share_link", "get_share_link",
                   {"id": share_id})
         assert_content("T79 get_share_link", results[-1].get("data", {}), ["id"])
 
-        await run(session, "T80 delete_share_link", "delete_share_link_by_id",
+        await run(session, "T80 delete_share_link", "delete_share_link",
                   {"id": share_id})
 
         # ==================================================================
         # Phase 4: Document Cleanup
         # ==================================================================
         log("\n--- Document Cleanup ---")
-        await run(session, "T81 delete_document", "delete_document_by_id",
+        await run(session, "T81 delete_document", "delete_document",
                   {"id": doc_id})
-        await run_verify(session, "T82 verify_delete_document", "get_document_by_id",
+        await run_verify(session, "T82 verify_delete_document", "get_document",
                   {"id": doc_id})
         await run(session, "T83 get_next_asn", "get_next_asn")
         assert_content("T83 get_next_asn", results[-1].get("data", {}), ["next_asn"])
@@ -802,9 +802,9 @@ async def main():
         # ==================================================================
         log("\n=== Phase 5: Task Tools ===")
 
-        await run(session, "T84 get_all_tasks", "get_all_tasks")
-        store_on_pass("T84 get_all_tasks", None, state, "all_tasks")
-        assert_content("T84 get_all_tasks", results[-1].get("data", {}), ["tasks"])
+        await run(session, "T84 list_all_tasks", "list_all_tasks")
+        store_on_pass("T84 list_all_tasks", None, state, "all_tasks")
+        assert_content("T84 list_all_tasks", results[-1].get("data", {}), ["tasks"])
 
         await run(session, "T85 get_task_summary", "get_task_summary",
                   {"days": 30})
@@ -813,23 +813,23 @@ async def main():
         await run(session, "T86 get_task_status_counts", "get_task_status_counts")
         assert_content("T86 get_task_status_counts", results[-1].get("data", {}), ["all"])
 
-        await run(session, "T87 get_active_tasks", "get_active_tasks")
+        await run(session, "T87 list_active_tasks", "list_active_tasks")
 
         await run(session, "T88 acknowledge_tasks", "acknowledge_tasks",
                   {"all_tasks": True})
 
         tasks_list = get_list_items(state.get("all_tasks", {}))
         task_id = tasks_list[0]["id"] if tasks_list else 0
-        await run(session, "T89 get_task_by_id", "get_task_by_id",
+        await run(session, "T89 get_task", "get_task",
                   {"id": task_id})
-        assert_content("T89 get_task_by_id", results[-1].get("data", {}), ["id"])
+        assert_content("T89 get_task", results[-1].get("data", {}), ["id"])
 
         # ==================================================================
         # Phase 6: Share Link Domain
         # ==================================================================
         log("\n=== Phase 6: Share Link Tools ===")
-        await run(session, "T90 get_all_share_links", "get_all_share_links")
-        assert_content("T90 get_all_share_links", results[-1].get("data", {}), ["share_links"])
+        await run(session, "T90 list_all_share_links", "list_all_share_links")
+        assert_content("T90 list_all_share_links", results[-1].get("data", {}), ["share_links"])
 
         # ==================================================================
         # Phase 7: Search Domain

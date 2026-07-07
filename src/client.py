@@ -96,13 +96,13 @@ class PaperlessClient:
     # Document Domain Methods
     # =========================================================================
 
-    async def get_all_documents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page: int = 1, page_size: int = 500) -> Any:
+    async def list_all_documents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page: int = 1, page_size: int = 500) -> Any:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if not include_all_fields:
             params["fields"] = COMMON_FIELDS["Documents"]
         return await self.get("/api/documents/", api_key, params=params)
 
-    async def get_document_by_id(self, document_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_document(self, document_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         params: dict[str, Any] = {}
         if not include_all_fields:
             params["fields"] = COMMON_FIELDS["Documents"]
@@ -115,7 +115,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Documents"])
         return data
 
-    async def delete_document_by_id(self, document_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_document(self, document_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/documents/{document_id}/", api_key)
         return {"message": "Document successfully deleted."}
 
@@ -131,7 +131,7 @@ class PaperlessClient:
     async def get_next_asn(self, api_key: Optional[str] = None) -> Any:
         return await self.get("/api/documents/next_asn/", api_key)
 
-    async def get_document_notes(self, document_id: int, api_key: Optional[str] = None) -> Any:
+    async def list_notes_by_document(self, document_id: int, api_key: Optional[str] = None) -> Any:
         return await self.get(f"/api/documents/{document_id}/notes/", api_key)
 
     async def create_document_note(self, document_id: int, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
@@ -145,13 +145,13 @@ class PaperlessClient:
     # Correspondent Domain Methods
     # =========================================================================
 
-    async def get_all_correspondents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_correspondents(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/correspondents/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["Correspondents"])
         return data
 
-    async def get_correspondent_by_id(self, correspondent_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_correspondent(self, correspondent_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/correspondents/{correspondent_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["Correspondents"])
@@ -171,7 +171,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Correspondents"])
         return data
 
-    async def delete_correspondent_by_id(self, correspondent_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_correspondent(self, correspondent_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/correspondents/{correspondent_id}/", api_key)
         return {"message": "Correspondent successfully deleted."}
 
@@ -179,13 +179,13 @@ class PaperlessClient:
     # Document Type Domain Methods
     # =========================================================================
 
-    async def get_all_document_types(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_document_types(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/document_types/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["DocumentTypes"])
         return data
 
-    async def get_document_type_by_id(self, document_type_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_document_type(self, document_type_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/document_types/{document_type_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["DocumentTypes"])
@@ -205,7 +205,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["DocumentTypes"])
         return data
 
-    async def delete_document_type_by_id(self, document_type_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_document_type(self, document_type_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/document_types/{document_type_id}/", api_key)
         return {"message": "Document type successfully deleted."}
 
@@ -213,13 +213,13 @@ class PaperlessClient:
     # Tag Domain Methods
     # =========================================================================
 
-    async def get_all_tags(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_tags(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/tags/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["Tags"])
         return data
 
-    async def get_tag_by_id(self, tag_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_tag(self, tag_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/tags/{tag_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["Tags"])
@@ -239,7 +239,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Tags"])
         return data
 
-    async def delete_tag_by_id(self, tag_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_tag(self, tag_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/tags/{tag_id}/", api_key)
         return {"message": "Tag successfully deleted."}
 
@@ -247,13 +247,13 @@ class PaperlessClient:
     # Storage Path Domain Methods
     # =========================================================================
 
-    async def get_all_storage_paths(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_storage_paths(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/storage_paths/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["StoragePaths"])
         return data
 
-    async def get_storage_path_by_id(self, storage_path_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_storage_path(self, storage_path_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/storage_paths/{storage_path_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["StoragePaths"])
@@ -273,7 +273,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["StoragePaths"])
         return data
 
-    async def delete_storage_path_by_id(self, storage_path_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_storage_path(self, storage_path_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/storage_paths/{storage_path_id}/", api_key)
         return {"message": "Storage path successfully deleted."}
 
@@ -281,13 +281,13 @@ class PaperlessClient:
     # Saved View Domain Methods
     # =========================================================================
 
-    async def get_all_saved_views(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_saved_views(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/saved_views/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["SavedViews"])
         return data
 
-    async def get_saved_view_by_id(self, saved_view_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_saved_view(self, saved_view_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/saved_views/{saved_view_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["SavedViews"])
@@ -307,7 +307,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["SavedViews"])
         return data
 
-    async def delete_saved_view_by_id(self, saved_view_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_saved_view(self, saved_view_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/saved_views/{saved_view_id}/", api_key)
         return {"message": "Saved view successfully deleted."}
 
@@ -315,13 +315,13 @@ class PaperlessClient:
     # Custom Field Domain Methods
     # =========================================================================
 
-    async def get_all_custom_fields(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_custom_fields(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/custom_fields/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["CustomFields"])
         return data
 
-    async def get_custom_field_by_id(self, custom_field_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_custom_field(self, custom_field_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/custom_fields/{custom_field_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["CustomFields"])
@@ -341,7 +341,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["CustomFields"])
         return data
 
-    async def delete_custom_field_by_id(self, custom_field_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_custom_field(self, custom_field_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/custom_fields/{custom_field_id}/", api_key)
         return {"message": "Custom field successfully deleted."}
 
@@ -349,13 +349,13 @@ class PaperlessClient:
     # Task Domain Methods
     # =========================================================================
 
-    async def get_all_tasks(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_tasks(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/tasks/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["Tasks"])
         return data
 
-    async def get_task_by_id(self, task_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_task(self, task_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/tasks/{task_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["Tasks"])
@@ -367,7 +367,7 @@ class PaperlessClient:
     async def get_task_status_counts(self, api_key: Optional[str] = None) -> Any:
         return await self.get("/api/tasks/status_counts/", api_key)
 
-    async def get_active_tasks(self, api_key: Optional[str] = None) -> Any:
+    async def list_active_tasks(self, api_key: Optional[str] = None) -> Any:
         return await self.get("/api/tasks/active/", api_key)
 
     async def acknowledge_tasks(self, payload: dict[str, Any], api_key: Optional[str] = None) -> Any:
@@ -377,13 +377,13 @@ class PaperlessClient:
     # Share Link Domain Methods
     # =========================================================================
 
-    async def get_all_share_links(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_share_links(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/share_links/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["ShareLinks"])
         return data
 
-    async def get_share_link_by_id(self, share_link_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_share_link(self, share_link_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/share_links/{share_link_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["ShareLinks"])
@@ -396,7 +396,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["ShareLinks"])
         return data
 
-    async def delete_share_link_by_id(self, share_link_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_share_link(self, share_link_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/share_links/{share_link_id}/", api_key)
         return {"message": "Share link successfully deleted."}
 
@@ -404,13 +404,13 @@ class PaperlessClient:
     # Workflow Domain Methods
     # =========================================================================
 
-    async def get_all_workflows(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_workflows(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/workflows/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["Workflows"])
         return data
 
-    async def get_workflow_by_id(self, workflow_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_workflow(self, workflow_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/workflows/{workflow_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["Workflows"])
@@ -430,7 +430,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["Workflows"])
         return data
 
-    async def delete_workflow_by_id(self, workflow_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_workflow(self, workflow_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/workflows/{workflow_id}/", api_key)
         return {"message": "Workflow successfully deleted."}
 
@@ -438,13 +438,13 @@ class PaperlessClient:
     # Mail Account Domain Methods
     # =========================================================================
 
-    async def get_all_mail_accounts(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_mail_accounts(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/mail_accounts/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["MailAccounts"])
         return data
 
-    async def get_mail_account_by_id(self, mail_account_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_mail_account(self, mail_account_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/mail_accounts/{mail_account_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["MailAccounts"])
@@ -464,7 +464,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["MailAccounts"])
         return data
 
-    async def delete_mail_account_by_id(self, mail_account_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_mail_account(self, mail_account_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/mail_accounts/{mail_account_id}/", api_key)
         return {"message": "Mail account successfully deleted."}
 
@@ -472,13 +472,13 @@ class PaperlessClient:
     # Mail Rule Domain Methods
     # =========================================================================
 
-    async def get_all_mail_rules(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
+    async def list_all_mail_rules(self, api_key: Optional[str] = None, include_all_fields: bool = False, page_size: int = 500) -> Any:
         data = await self.get("/api/mail_rules/", api_key, params={"page_size": page_size})
         if not include_all_fields:
             data = self._filter_list_response(data, COMMON_FIELDS["MailRules"])
         return data
 
-    async def get_mail_rule_by_id(self, mail_rule_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
+    async def get_mail_rule(self, mail_rule_id: int, api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         data = await self.get(f"/api/mail_rules/{mail_rule_id}/", api_key)
         if not include_all_fields:
             data = self._filter_fields(data, COMMON_FIELDS["MailRules"])
@@ -498,7 +498,7 @@ class PaperlessClient:
             data = self._filter_fields(data, COMMON_FIELDS["MailRules"])
         return data
 
-    async def delete_mail_rule_by_id(self, mail_rule_id: int, api_key: Optional[str] = None) -> Any:
+    async def delete_mail_rule(self, mail_rule_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/mail_rules/{mail_rule_id}/", api_key)
         return {"message": "Mail rule successfully deleted."}
 
