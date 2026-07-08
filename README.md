@@ -72,15 +72,15 @@ The MCP server serves at `http://paperless-mcp:80/mcp` (Streamable HTTP).
 The server implements 76 MCP tools organized into the following categories:
 
 ### 📄 Documents (17 tools)
-- `get_all_documents` — List all documents
-- `get_document_by_id` — Get a single document by ID
+- `list_all_documents` — List all documents
+- `get_document` — Get a single document by ID
 - `update_document` — Update a document's metadata
-- `delete_document_by_id` — Delete a document by ID
+- `delete_document` — Delete a document by ID
 - `get_document_metadata` — Get document file metadata
 - `get_document_suggestions` — Get ML suggestions for a document
 - `get_document_ai_suggestions` — Get AI suggestions for a document
 - `get_next_asn` — Get next available archive serial number
-- `get_document_notes` — List notes on a document
+- `list_notes_by_document` — List notes on a document
 - `create_document_note` — Add a note to a document
 - `delete_document_note` — Delete a note from a document
 - `get_document_download_url` — Get download URL for a document
@@ -91,81 +91,81 @@ The server implements 76 MCP tools organized into the following categories:
 - `assign_custom_field` — Assign or remove a custom field value on documents
 
 ### 👤 Correspondents (5 tools)
-- `get_all_correspondents` — List all correspondents
-- `get_correspondent_by_id` — Get a single correspondent
+- `list_all_correspondents` — List all correspondents
+- `get_correspondent` — Get a single correspondent
 - `create_correspondent` — Create a new correspondent
 - `update_correspondent` — Update a correspondent
-- `delete_correspondent_by_id` — Delete a correspondent
+- `delete_correspondent` — Delete a correspondent
 
 ### 📋 Document Types (5 tools)
-- `get_all_document_types` — List all document types
-- `get_document_type_by_id` — Get a single document type
+- `list_all_document_types` — List all document types
+- `get_document_type` — Get a single document type
 - `create_document_type` — Create a new document type
 - `update_document_type` — Update a document type
-- `delete_document_type_by_id` — Delete a document type
+- `delete_document_type` — Delete a document type
 
 ### 🔖 Tags (5 tools)
-- `get_all_tags` — List all tags
-- `get_tag_by_id` — Get a single tag
+- `list_all_tags` — List all tags
+- `get_tag` — Get a single tag
 - `create_tag` — Create a new tag
 - `update_tag` — Update a tag
-- `delete_tag_by_id` — Delete a tag
+- `delete_tag` — Delete a tag
 
 ### 📂 Storage Paths (5 tools)
-- `get_all_storage_paths` — List all storage paths
-- `get_storage_path_by_id` — Get a single storage path
+- `list_all_storage_paths` — List all storage paths
+- `get_storage_path` — Get a single storage path
 - `create_storage_path` — Create a new storage path
 - `update_storage_path` — Update a storage path
-- `delete_storage_path_by_id` — Delete a storage path
+- `delete_storage_path` — Delete a storage path
 
 ### 👁️ Saved Views (5 tools)
-- `get_all_saved_views` — List all saved views
-- `get_saved_view_by_id` — Get a single saved view
+- `list_all_saved_views` — List all saved views
+- `get_saved_view` — Get a single saved view
 - `create_saved_view` — Create a new saved view
 - `update_saved_view` — Update a saved view
-- `delete_saved_view_by_id` — Delete a saved view
+- `delete_saved_view` — Delete a saved view
 
 ### ✏️ Custom Fields (5 tools)
-- `get_all_custom_fields` — List all custom fields
-- `get_custom_field_by_id` — Get a single custom field
+- `list_all_custom_fields` — List all custom fields
+- `get_custom_field` — Get a single custom field
 - `create_custom_field` — Create a new custom field
 - `update_custom_field` — Update a custom field
-- `delete_custom_field_by_id` — Delete a custom field
+- `delete_custom_field` — Delete a custom field
 
 ### ⚙️ Tasks (6 tools)
-- `get_all_tasks` — List all tasks
-- `get_task_by_id` — Get a single task
+- `list_all_tasks` — List all tasks
+- `get_task` — Get a single task
 - `get_task_summary` — Get aggregated task statistics
 - `get_task_status_counts` — Get counts of tasks by status
-- `get_active_tasks` — Get currently running tasks
+- `list_active_tasks` — Get currently running tasks
 - `acknowledge_tasks` — Acknowledge one or more tasks
 
 ### 🔗 Share Links (4 tools)
-- `get_all_share_links` — List all share links
-- `get_share_link_by_id` — Get a single share link
+- `list_all_share_links` — List all share links
+- `get_share_link` — Get a single share link
 - `create_share_link` — Create a new share link
-- `delete_share_link_by_id` — Delete a share link
+- `delete_share_link` — Delete a share link
 
 ### 🔄 Workflows (5 tools)
-- `get_all_workflows` — List all workflows
-- `get_workflow_by_id` — Get a single workflow
+- `list_all_workflows` — List all workflows
+- `get_workflow` — Get a single workflow
 - `create_workflow` — Create a new workflow
 - `update_workflow` — Update a workflow
-- `delete_workflow_by_id` — Delete a workflow
+- `delete_workflow` — Delete a workflow
 
 ### 📧 Mail Accounts (5 tools)
-- `get_all_mail_accounts` — List all mail accounts
-- `get_mail_account_by_id` — Get a single mail account
+- `list_all_mail_accounts` — List all mail accounts
+- `get_mail_account` — Get a single mail account
 - `create_mail_account` — Create a new mail account
 - `update_mail_account` — Update a mail account
-- `delete_mail_account_by_id` — Delete a mail account
+- `delete_mail_account` — Delete a mail account
 
 ### 📨 Mail Rules (5 tools)
-- `get_all_mail_rules` — List all mail rules
-- `get_mail_rule_by_id` — Get a single mail rule
+- `list_all_mail_rules` — List all mail rules
+- `get_mail_rule` — Get a single mail rule
 - `create_mail_rule` — Create a new mail rule
 - `update_mail_rule` — Update a mail rule
-- `delete_mail_rule_by_id` — Delete a mail rule
+- `delete_mail_rule` — Delete a mail rule
 
 ### 🛠️ Domain-Specific Tools (4 tools)
 - `search_documents` — Global search across documents
