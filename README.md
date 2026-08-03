@@ -21,6 +21,9 @@ Paperless backend API. It exposes **76 MCP tools** covering **14 resource domain
   default. Full objects are available via an `include_all_fields` flag.
 - **🧪 Comprehensive Testing** — 147 automated tests covering all tool domains,
   run via the test runner pipeline.
+- **🏷️ Tool Annotations** — All tools expose standard MCP ToolAnnotations hints
+  (readOnlyHint, destructiveHint, idempotentHint, openWorldHint). The tags field carries
+  grouping metadata (basic/primary/advanced + paperless).
 
 ## 🔧 Environment Variables
 

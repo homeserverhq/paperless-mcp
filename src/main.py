@@ -5,6 +5,7 @@ from contextvars import ContextVar
 from typing import Any, Optional
 
 from fastmcp import FastMCP, Context
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 from toon_mcp import json_to_toon
 
@@ -341,7 +342,7 @@ class CustomFieldExtraData(BaseModel):
 # Document Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Documents", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_documents(
     include_all_fields: bool = False,
     page: int = 1,
@@ -364,7 +365,7 @@ async def list_all_documents(
     return {"documents": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document(
     id: int,
     include_all_fields: bool = False,
@@ -379,7 +380,7 @@ async def get_document(
     return await get_client().get_document(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Document", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_document(
     id: int,
     title: Optional[str] = None,
@@ -422,7 +423,7 @@ async def update_document(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Document", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_document(
     id: int,
     ctx: Context = None
@@ -435,7 +436,7 @@ async def delete_document(
     return await get_client().delete_document(id, get_user_token())
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Metadata", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_metadata(
     id: int,
     ctx: Context = None
@@ -448,7 +449,7 @@ async def get_document_metadata(
     return await get_client().get_document_metadata(id, get_user_token())
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Suggestions", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_suggestions(
     id: int,
     ctx: Context = None
@@ -461,7 +462,7 @@ async def get_document_suggestions(
     return await get_client().get_document_suggestions(id, get_user_token())
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Document Ai Suggestions", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_ai_suggestions(
     id: int,
     ctx: Context = None
@@ -474,14 +475,14 @@ async def get_document_ai_suggestions(
     return await get_client().get_document_ai_suggestions(id, get_user_token())
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Next Asn", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_next_asn(ctx: Context = None) -> dict[str, Any]:
     """Get the next available Archive Serial Number."""
     data = await get_client().get_next_asn(get_user_token())
     return {"next_asn": data}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Download Url", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_download_url(
     id: int,
     ctx: Context = None
@@ -495,7 +496,7 @@ async def get_document_download_url(
     return {"download_url": f"{public_url}/api/documents/{id}/download/"}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Preview Url", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_preview_url(
     id: int,
     ctx: Context = None
@@ -509,7 +510,7 @@ async def get_document_preview_url(
     return {"preview_url": f"{public_url}/api/documents/{id}/preview/"}
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Document Thumbnail Url", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_thumbnail_url(
     id: int,
     ctx: Context = None
@@ -523,7 +524,7 @@ async def get_document_thumbnail_url(
     return {"thumbnail_url": f"{public_url}/api/documents/{id}/thumb/"}
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Bulk Update Documents", readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False))
 async def bulk_update_documents(
     documents: list[int],
     method: str,
@@ -555,7 +556,7 @@ async def bulk_update_documents(
     return {"result": data}
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Reprocess Documents", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def reprocess_documents(
     documents: list[int] = [],
     all: bool = False,
@@ -581,7 +582,7 @@ async def reprocess_documents(
     return {"result": data}
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Assign Custom Field", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def assign_custom_field(
     documents: list[int],
     field_id: int,
@@ -611,7 +612,7 @@ async def assign_custom_field(
     return {"result": data}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List Notes By Document", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_notes_by_document(
     id: int,
     ctx: Context = None
@@ -625,7 +626,7 @@ async def list_notes_by_document(
     return {"notes": data}
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Document Note", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_document_note(
     document_id: int,
     note: str,
@@ -644,7 +645,7 @@ async def create_document_note(
     return {"note": data}
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Document Note", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_document_note(
     document_id: int,
     note_id: int,
@@ -664,7 +665,7 @@ async def delete_document_note(
 # Correspondent Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Correspondents", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_correspondents(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -684,7 +685,7 @@ async def list_all_correspondents(
     return {"correspondents": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Correspondent", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_correspondent(
     id: int,
     include_all_fields: bool = False,
@@ -699,7 +700,7 @@ async def get_correspondent(
     return await get_client().get_correspondent(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Correspondent", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_correspondent(
     name: str,
     matching_algorithm: int = 1,
@@ -728,7 +729,7 @@ async def create_correspondent(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Correspondent", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_correspondent(
     id: int,
     name: Optional[str] = None,
@@ -759,7 +760,7 @@ async def update_correspondent(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Correspondent", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_correspondent(
     id: int,
     ctx: Context = None
@@ -776,7 +777,7 @@ async def delete_correspondent(
 # Document Type Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Document Types", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_document_types(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -796,7 +797,7 @@ async def list_all_document_types(
     return {"document_types": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Type", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_document_type(
     id: int,
     include_all_fields: bool = False,
@@ -811,7 +812,7 @@ async def get_document_type(
     return await get_client().get_document_type(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Document Type", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_document_type(
     name: str,
     matching_algorithm: int = 1,
@@ -840,7 +841,7 @@ async def create_document_type(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Document Type", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_document_type(
     id: int,
     name: Optional[str] = None,
@@ -871,7 +872,7 @@ async def update_document_type(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Document Type", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_document_type(
     id: int,
     ctx: Context = None
@@ -888,7 +889,7 @@ async def delete_document_type(
 # Tag Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Tags", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_tags(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -908,7 +909,7 @@ async def list_all_tags(
     return {"tags": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Tag", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_tag(
     id: int,
     include_all_fields: bool = False,
@@ -923,7 +924,7 @@ async def get_tag(
     return await get_client().get_tag(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Tag", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_tag(
     name: str,
     color: str = "#a6cee3",
@@ -959,7 +960,7 @@ async def create_tag(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Tag", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_tag(
     id: int,
     name: Optional[str] = None,
@@ -997,7 +998,7 @@ async def update_tag(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Tag", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_tag(
     id: int,
     ctx: Context = None
@@ -1014,7 +1015,7 @@ async def delete_tag(
 # Storage Path Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Storage Paths", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_storage_paths(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1034,7 +1035,7 @@ async def list_all_storage_paths(
     return {"storage_paths": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Storage Path", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_storage_path(
     id: int,
     include_all_fields: bool = False,
@@ -1049,7 +1050,7 @@ async def get_storage_path(
     return await get_client().get_storage_path(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Storage Path", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_storage_path(
     name: str,
     path: str,
@@ -1080,7 +1081,7 @@ async def create_storage_path(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Storage Path", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_storage_path(
     id: int,
     name: Optional[str] = None,
@@ -1113,7 +1114,7 @@ async def update_storage_path(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Storage Path", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_storage_path(
     id: int,
     ctx: Context = None
@@ -1130,7 +1131,7 @@ async def delete_storage_path(
 # Saved View Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="List All Saved Views", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_saved_views(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1150,7 +1151,7 @@ async def list_all_saved_views(
     return {"saved_views": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Saved View", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_saved_view(
     id: int,
     include_all_fields: bool = False,
@@ -1165,7 +1166,7 @@ async def get_saved_view(
     return await get_client().get_saved_view(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Create Saved View", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_saved_view(
     name: str,
     show_on_dashboard: bool = False,
@@ -1199,7 +1200,7 @@ async def create_saved_view(
     )
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Update Saved View", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_saved_view(
     id: int,
     name: Optional[str] = None,
@@ -1235,7 +1236,7 @@ async def update_saved_view(
     )
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Delete Saved View", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_saved_view(
     id: int,
     ctx: Context = None
@@ -1252,7 +1253,7 @@ async def delete_saved_view(
 # Custom Field Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="List All Custom Fields", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_custom_fields(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1272,7 +1273,7 @@ async def list_all_custom_fields(
     return {"custom_fields": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Custom Field", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_custom_field(
     id: int,
     include_all_fields: bool = False,
@@ -1287,7 +1288,7 @@ async def get_custom_field(
     return await get_client().get_custom_field(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Create Custom Field", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_custom_field(
     name: str,
     data_type: str,
@@ -1309,7 +1310,7 @@ async def create_custom_field(
     )
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Update Custom Field", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_custom_field(
     id: int,
     name: Optional[str] = None,
@@ -1335,7 +1336,7 @@ async def update_custom_field(
     )
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Delete Custom Field", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_custom_field(
     id: int,
     ctx: Context = None
@@ -1352,7 +1353,7 @@ async def delete_custom_field(
 # Task Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Tasks", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_tasks(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1372,7 +1373,7 @@ async def list_all_tasks(
     return {"tasks": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Task", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_task(
     id: int,
     include_all_fields: bool = False,
@@ -1387,7 +1388,7 @@ async def get_task(
     return await get_client().get_task(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Task Summary", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_task_summary(
     days: int = 30,
     ctx: Context = None
@@ -1401,20 +1402,20 @@ async def get_task_summary(
     return {"summary": data}
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Task Status Counts", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_task_status_counts(ctx: Context = None) -> dict[str, Any]:
     """Get counts of tasks by status."""
     return await get_client().get_task_status_counts(get_user_token())
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List Active Tasks", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_active_tasks(ctx: Context = None) -> dict[str, Any]:
     """Get currently pending or running tasks."""
     data = await get_client().list_active_tasks(get_user_token())
     return {"active_tasks": data}
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Acknowledge Tasks", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def acknowledge_tasks(
     tasks: Optional[list[int]] = None,
     all_tasks: Optional[bool] = None,
@@ -1436,7 +1437,7 @@ async def acknowledge_tasks(
 # Share Link Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="List All Share Links", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_share_links(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1456,7 +1457,7 @@ async def list_all_share_links(
     return {"share_links": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Share Link", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_share_link(
     id: int,
     include_all_fields: bool = False,
@@ -1471,7 +1472,7 @@ async def get_share_link(
     return await get_client().get_share_link(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Create Share Link", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_share_link(
     document: int,
     expiration: str,
@@ -1494,7 +1495,7 @@ async def create_share_link(
     )
 
 
-@mcp.tool(tags={"write", "advanced", "paperless"})
+@mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Delete Share Link", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_share_link(
     id: int,
     ctx: Context = None
@@ -1511,7 +1512,7 @@ async def delete_share_link(
 # Workflow Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Workflows", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_workflows(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1531,7 +1532,7 @@ async def list_all_workflows(
     return {"workflows": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Workflow", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_workflow(
     id: int,
     include_all_fields: bool = False,
@@ -1546,7 +1547,7 @@ async def get_workflow(
     return await get_client().get_workflow(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Workflow", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_workflow(
     name: str,
     triggers: list[WorkflowTrigger] = [WorkflowTrigger()],
@@ -1578,7 +1579,7 @@ async def create_workflow(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Workflow", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_workflow(
     id: int,
     name: Optional[str] = None,
@@ -1614,7 +1615,7 @@ async def update_workflow(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Workflow", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_workflow(
     id: int,
     ctx: Context = None
@@ -1631,7 +1632,7 @@ async def delete_workflow(
 # Mail Account Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Mail Accounts", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_mail_accounts(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1651,7 +1652,7 @@ async def list_all_mail_accounts(
     return {"mail_accounts": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Mail Account", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_mail_account(
     id: int,
     include_all_fields: bool = False,
@@ -1666,7 +1667,7 @@ async def get_mail_account(
     return await get_client().get_mail_account(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Mail Account", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_mail_account(
     name: str,
     username: str,
@@ -1705,7 +1706,7 @@ async def create_mail_account(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Mail Account", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_mail_account(
     id: int,
     name: Optional[str] = None,
@@ -1746,7 +1747,7 @@ async def update_mail_account(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Mail Account", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_mail_account(
     id: int,
     ctx: Context = None
@@ -1763,7 +1764,7 @@ async def delete_mail_account(
 # Mail Rule Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="List All Mail Rules", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def list_all_mail_rules(
     include_all_fields: bool = False,
     page_size: int = 500,
@@ -1783,7 +1784,7 @@ async def list_all_mail_rules(
     return {"mail_rules": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Mail Rule", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_mail_rule(
     id: int,
     include_all_fields: bool = False,
@@ -1798,7 +1799,7 @@ async def get_mail_rule(
     return await get_client().get_mail_rule(id, get_user_token(), include_all_fields=include_all_fields)
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Create Mail Rule", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
 async def create_mail_rule(
     name: str,
     account: int,
@@ -1859,7 +1860,7 @@ async def create_mail_rule(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Mail Rule", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_mail_rule(
     id: int,
     name: Optional[str] = None,
@@ -1922,7 +1923,7 @@ async def update_mail_rule(
     )
 
 
-@mcp.tool(tags={"write", "primary", "paperless"})
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Delete Mail Rule", readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
 async def delete_mail_rule(
     id: int,
     ctx: Context = None
@@ -1939,7 +1940,7 @@ async def delete_mail_rule(
 # Search Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "basic", "paperless"})
+@mcp.tool(tags={"basic", "paperless"}, annotations=ToolAnnotations(title="Search Documents", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def search_documents(
     query: str,
     limit: int = 50,
@@ -1957,7 +1958,7 @@ async def search_documents(
     return {"results": json_to_toon(data)}
 
 
-@mcp.tool(tags={"read", "basic", "paperless"})
+@mcp.tool(tags={"basic", "paperless"}, annotations=ToolAnnotations(title="Search Autocomplete", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def search_autocomplete(
     term: str,
     limit: int = 10,
@@ -1977,13 +1978,13 @@ async def search_autocomplete(
 # System Tools
 # =============================================================================
 
-@mcp.tool(tags={"read", "basic", "paperless"})
+@mcp.tool(tags={"basic", "paperless"}, annotations=ToolAnnotations(title="Get Statistics", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_statistics(ctx: Context = None) -> dict[str, Any]:
     """Get document and statistics counts for the current user."""
     return await get_client().get_statistics(get_user_token())
 
 
-@mcp.tool(tags={"read", "basic", "paperless"})
+@mcp.tool(tags={"basic", "paperless"}, annotations=ToolAnnotations(title="Check Server Status", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def check_server_status(ctx: Context = None) -> dict[str, Any]:
     """Check connectivity and status of the Paperless backend."""
     try:

@@ -266,10 +266,11 @@ async def prep_create_test_document(api_key: str) -> int:
         existing = r.json()
         max_id = max((d["id"] for d in existing.get("results", [])), default=0)
 
+        run_suffix = f"{int(time.time())}-{os.getpid()}"
         files = {
             "document": (
-                "opencode-test.txt",
-                b"OpenCode test document - safe to delete",
+                f"opencode-test-{run_suffix}.txt",
+                f"OpenCode test document - safe to delete (run {run_suffix})".encode(),
                 "text/plain",
             )
         }
