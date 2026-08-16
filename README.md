@@ -19,7 +19,7 @@ Paperless backend API. It exposes **77 MCP tools** covering **14 resource domain
   and maximize context window efficiency.
 - **🚀 Efficient Gets** — GET responses return only commonly used fields by
   default. Full objects are available via an `include_all_fields` flag.
-- **🧪 Comprehensive Testing** — 153 automated tests covering all tool domains,
+- **🧪 Comprehensive Testing** — 154 automated tests covering all tool domains,
   run via the test runner pipeline.
 - **🏷️ Tool Annotations** — All tools expose standard MCP ToolAnnotations hints
   (readOnlyHint, destructiveHint, idempotentHint, openWorldHint). The tags field carries

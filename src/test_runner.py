@@ -826,9 +826,55 @@ async def main():
         # Phase 7: Search Domain
         # ==================================================================
         log("\n=== Phase 7: Search Tools ===")
-        await run(session, "T91 search_documents", "search_documents",
-                  {"query": "test"})
-        assert_content("T91 search_documents", results[-1].get("data", {}), ["results"])
+        # Use a unique marker document uploaded via MCP so the search test is
+        # deterministic (always returns the matching doc) rather than data-dependent.
+        search_term = f"zcqsearchdoc{os.getpid()}{int(time.time())}"
+        up_result = await session.call_tool("upload_document", {
+            "title": f"search-marker {search_term}",
+            "content": f"unique marker content {search_term}",
+        })
+        up_err = is_error(up_result)
+        if up_err:
+            results.append({
+                "label": "T91 search_documents", "tool": "upload_document", "status": "FAILED",
+                "reason": f"search marker upload failed: {up_err}"
+            })
+            log(f"  FAIL T91 search_documents: marker upload failed: {up_err}")
+        else:
+            up_data = extract_content(up_result)
+            search_doc_id = up_data.get("id") if isinstance(up_data, dict) else None
+            if not search_doc_id:
+                results.append({
+                    "label": "T91 search_documents", "tool": "upload_document",
+                    "status": "FAILED", "reason": f"search marker upload returned no id: {up_data}"
+                })
+                log(f"  FAIL T91 search_documents: marker upload returned no id")
+            else:
+                await run(session, "T91 search_documents", "search_documents",
+                          {"query": search_term})
+                data = results[-1].get("data", {})
+                assert_content("T91 search_documents", data, ["results"])
+                if PUBLIC_URL:
+                    items = get_list_items(data)
+                    matched = next(
+                        (i for i in items if isinstance(i, dict) and i.get("id") == search_doc_id),
+                        None,
+                    )
+                    if matched and "documentUrl" in matched:
+                        results.append({
+                            "label": "T91 search_documents (url)", "tool": "", "status": "PASSED",
+                            "data": {"assertion": "documentUrl present on search result",
+                                     "documentUrl": matched["documentUrl"]}
+                        })
+                        log("  PASS T91 search_documents (url): documentUrl present")
+                    else:
+                        results.append({
+                            "label": "T91 search_documents (url)", "tool": "", "status": "FAILED",
+                            "reason": f"Search did not return marker doc with documentUrl. "
+                                      f"Got: {str(data)[:300]}"
+                        })
+                        log("  FAIL T91 search_documents (url): missing documentUrl on marker doc")
+                await session.call_tool("delete_document", {"id": search_doc_id})
 
         await run(session, "T92 search_autocomplete", "search_autocomplete",
                   {"term": "test"})

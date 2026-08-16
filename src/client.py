@@ -596,7 +596,10 @@ class PaperlessClient:
             params["limit"] = limit
         if db_only:
             params["db_only"] = "true"
-        return await self.get("/api/search/", api_key, params=params)
+        data = await self.get("/api/search/", api_key, params=params)
+        if isinstance(data, dict) and "documents" in data:
+            data["documents"] = self._augment_urls(data["documents"], "document", self.public_url)
+        return data
 
     async def search_autocomplete(self, term: str, api_key: Optional[str] = None, limit: int = 10) -> Any:
         params: dict[str, Any] = {"term": term, "limit": limit}
