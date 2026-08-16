@@ -2,7 +2,7 @@
 
 This repository contains a Model Context Protocol (MCP) server that acts
 as a secure, multi-tenant proxy between an AI Assistant and the
-Paperless backend API. It exposes **76 MCP tools** covering **14 resource domains** with full CRUD, search, URL generation, bulk editing, and system operations.
+Paperless backend API. It exposes **77 MCP tools** covering **14 resource domains** with full CRUD, search, URL generation, bulk editing, and system operations.
 
 ## ✨ Features
 
@@ -12,14 +12,14 @@ Paperless backend API. It exposes **76 MCP tools** covering **14 resource domain
 - **👥 Multi-Tenancy** — Uses Python `contextvars` to maintain thread-safe
   user identity isolation, ensuring all AI-driven actions are scoped to
   the authenticated user's permissions.
-- **📊 Full Paperless Coverage** — 76 tools mapped to Paperless
+- **📊 Full Paperless Coverage** — 77 tools mapped to Paperless
   API endpoints across 14 resource domains.
 - **⚡ TOON Optimization** — Bulk list responses are automatically compressed
   using TOON (Token-Optimized Object Notation) to reduce token consumption
   and maximize context window efficiency.
 - **🚀 Efficient Gets** — GET responses return only commonly used fields by
   default. Full objects are available via an `include_all_fields` flag.
-- **🧪 Comprehensive Testing** — 147 automated tests covering all tool domains,
+- **🧪 Comprehensive Testing** — 153 automated tests covering all tool domains,
   run via the test runner pipeline.
 - **🏷️ Tool Annotations** — All tools expose standard MCP ToolAnnotations hints
   (readOnlyHint, destructiveHint, idempotentHint, openWorldHint). The tags field carries
@@ -72,10 +72,11 @@ The MCP server serves at `http://paperless-mcp:80/mcp` (Streamable HTTP).
 
 ## 🛠️ API Tool Mapping
 
-The server implements 76 MCP tools organized into the following categories:
+The server implements 77 MCP tools organized into the following categories:
 
-### 📄 Documents (Core) (10 tools)
+### 📄 Documents (Core) (11 tools)
 - `list_all_documents` — List all documents
+- `upload_document` — Upload a new text document and wait until it is consumed
 - `get_document` — Get a single document by ID
 - `update_document` — Update a document's metadata
 - `delete_document` — Delete a document by ID

@@ -25,7 +25,7 @@ MCP_SERVER_PORT = os.environ.get("MCP_SERVER_PORT", "")
 API_KEY = os.environ.get("API_KEY", "")
 MCP_URL = f"http://localhost:{MCP_SERVER_PORT}/mcp"
 
-PAPERLESS_DIRECT_URL = os.environ.get("PAPERLESS_DIRECT_URL", "http://localhost:8050")
+PUBLIC_URL = os.environ.get("PAPERLESS_PUBLIC_URL", "").rstrip("/")
 
 MCP_HEADERS = {
     "Authorization": f"Token {API_KEY}",
@@ -253,46 +253,19 @@ def get_create_status(label: str) -> bool:
 # Prep Phase: Create Disposable Test Document
 # =============================================================================
 
-async def prep_create_test_document(api_key: str) -> int:
-    """Upload a disposable test document directly to Paperless and return its ID."""
-    headers = {"Authorization": f"Token {api_key}"}
-    async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"{PAPERLESS_DIRECT_URL}/api/documents/",
-            headers=headers,
-            params={"page_size": 1, "ordering": "-id"},
-        )
-        r.raise_for_status()
-        existing = r.json()
-        max_id = max((d["id"] for d in existing.get("results", [])), default=0)
-
-        run_suffix = f"{int(time.time())}-{os.getpid()}"
-        files = {
-            "document": (
-                f"opencode-test-{run_suffix}.txt",
-                f"OpenCode test document - safe to delete (run {run_suffix})".encode(),
-                "text/plain",
-            )
-        }
-        upload_r = await client.post(
-            f"{PAPERLESS_DIRECT_URL}/api/documents/post_document/",
-            headers=headers,
-            files=files,
-        )
-        upload_r.raise_for_status()
-
-        for _ in range(60):
-            await asyncio.sleep(1)
-            r = await client.get(
-                f"{PAPERLESS_DIRECT_URL}/api/documents/",
-                headers=headers,
-                params={"page_size": 50, "ordering": "-id"},
-            )
-            r.raise_for_status()
-            for doc in r.json().get("results", []):
-                if doc["id"] > max_id:
-                    return doc["id"]
-        raise RuntimeError("Test document did not appear after upload")
+async def prep_create_test_document(session: MCPSession) -> int:
+    """Upload a disposable test document through the MCP server and return its ID."""
+    run_suffix = f"{int(time.time())}-{os.getpid()}"
+    title = f"opencode-test-{run_suffix}"
+    content = f"OpenCode test document - safe to delete (run {run_suffix})"
+    result = await session.call_tool("upload_document", {"title": title, "content": content})
+    err = is_error(result)
+    if err:
+        raise RuntimeError(f"upload_document failed: {err}")
+    data = extract_content(result)
+    if isinstance(data, dict) and data.get("id"):
+        return int(data["id"])
+    raise RuntimeError(f"upload_document returned no document id: {data}")
 
 
 # =============================================================================
@@ -399,7 +372,7 @@ async def main():
         # Prep Phase
         # ==================================================================
         log("\n=== Prep Phase: Create Disposable Test Document ===")
-        test_doc_id = await prep_create_test_document(API_KEY)
+        test_doc_id = await prep_create_test_document(session)
         state["doc_id"] = test_doc_id
         log(f"  Created test document ID: {test_doc_id}")
 
@@ -440,13 +413,19 @@ async def main():
         # ==================================================================
         log("\n=== Phase 2: List Tools ===")
         await run(session, "T04 list_correspondents", "list_all_correspondents")
-        assert_content("T04 list_correspondents", results[-1].get("data", {}), ["correspondents"])
+        data = results[-1].get("data", {})
+        assert_content("T04 list_correspondents", data, ["correspondents"])
+        if PUBLIC_URL:
+            assert_content("T04 list_correspondents (url)", data, ["correspondentsUrl"])
 
         await run(session, "T05 list_document_types", "list_all_document_types")
         assert_content("T05 list_document_types", results[-1].get("data", {}), ["document_types"])
 
         await run(session, "T06 list_tags", "list_all_tags")
-        assert_content("T06 list_tags", results[-1].get("data", {}), ["tags"])
+        data = results[-1].get("data", {})
+        assert_content("T06 list_tags", data, ["tags"])
+        if PUBLIC_URL:
+            assert_content("T06 list_tags (url)", data, ["tagsUrl"])
 
         await run(session, "T07 list_storage_paths", "list_all_storage_paths")
         assert_content("T07 list_storage_paths", results[-1].get("data", {}), ["storage_paths"])
@@ -458,7 +437,10 @@ async def main():
         assert_content("T09 list_custom_fields", results[-1].get("data", {}), ["custom_fields"])
 
         await run(session, "T10 list_workflows", "list_all_workflows")
-        assert_content("T10 list_workflows", results[-1].get("data", {}), ["workflows"])
+        data = results[-1].get("data", {})
+        assert_content("T10 list_workflows", data, ["workflows"])
+        if PUBLIC_URL:
+            assert_content("T10 list_workflows (url)", data, ["workflowsUrl"])
 
         await run(session, "T11 list_mail_accounts", "list_all_mail_accounts")
         assert_content("T11 list_mail_accounts", results[-1].get("data", {}), ["mail_accounts"])
@@ -576,6 +558,8 @@ async def main():
                   {"id": pick_id(state, "savedview")})
         store_on_pass("T34 get_saved_view", None, state, "savedview_get")
         assert_content("T34 get_saved_view", state.get("savedview_get", {}), ["id", "name"])
+        if PUBLIC_URL:
+            assert_content("T34 get_saved_view (url)", state.get("savedview_get", {}), ["savedViewUrl"])
 
         gid = pick_id(state, "savedview_get") or pick_id(state, "savedview")
         await run(session, "T35 update_saved_view", "update_saved_view",
@@ -708,7 +692,10 @@ async def main():
 
         await run(session, "T60 get_document", "get_document",
                   {"id": doc_id})
-        assert_content("T60 get_document", results[-1].get("data", {}), ["id", "title"])
+        data = results[-1].get("data", {})
+        assert_content("T60 get_document", data, ["id", "title"])
+        if PUBLIC_URL:
+            assert_content("T60 get_document (url)", data, ["documentUrl"])
 
         await run(session, "T61 get_document_metadata", "get_document_metadata",
                   {"id": doc_id})
@@ -782,7 +769,10 @@ async def main():
         share_id = pick_id(state, "share_link")
         await run(session, "T79 get_share_link", "get_share_link",
                   {"id": share_id})
-        assert_content("T79 get_share_link", results[-1].get("data", {}), ["id"])
+        data = results[-1].get("data", {})
+        assert_content("T79 get_share_link", data, ["id"])
+        if PUBLIC_URL:
+            assert_content("T79 get_share_link (url)", data, ["shareLinkUrl"])
 
         await run(session, "T80 delete_share_link", "delete_share_link",
                   {"id": share_id})

@@ -36,6 +36,16 @@ _FILTER_RULE_MAP = {
 }
 
 
+def _list_response(data: Any, key: str, url_field: str = "") -> dict[str, Any]:
+    url = None
+    if isinstance(data, dict) and url_field and data.get(url_field):
+        url = data.pop(url_field)
+    result: dict[str, Any] = {key: json_to_toon(data)}
+    if url:
+        result[url_field] = url
+    return result
+
+
 class AuthMiddleware:
     def __init__(self, app):
         self.app = app
@@ -475,6 +485,22 @@ async def get_document_ai_suggestions(
     return await get_client().get_document_ai_suggestions(id, get_user_token())
 
 
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Upload Document", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=True))
+async def upload_document(
+    title: str,
+    content: str,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Upload a new text document to Paperless and wait until it is consumed.
+
+    Args:
+        title: Title to assign to the document.
+        content: Plain text body of the document.
+    """
+    data = await get_client().upload_document(title, content, get_user_token())
+    return data
+
+
 @mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Next Asn", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_next_asn(ctx: Context = None) -> dict[str, Any]:
     """Get the next available Archive Serial Number."""
@@ -682,7 +708,7 @@ async def list_all_correspondents(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"correspondents": json_to_toon(data)}
+    return _list_response(data, "correspondents", "correspondentsUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Correspondent", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -794,7 +820,7 @@ async def list_all_document_types(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"document_types": json_to_toon(data)}
+    return _list_response(data, "document_types", "documentTypesUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Type", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -906,7 +932,7 @@ async def list_all_tags(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"tags": json_to_toon(data)}
+    return _list_response(data, "tags", "tagsUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Tag", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -1032,7 +1058,7 @@ async def list_all_storage_paths(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"storage_paths": json_to_toon(data)}
+    return _list_response(data, "storage_paths", "storagePathsUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Storage Path", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -1270,7 +1296,7 @@ async def list_all_custom_fields(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"custom_fields": json_to_toon(data)}
+    return _list_response(data, "custom_fields", "customFieldsUrl")
 
 
 @mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Custom Field", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -1370,7 +1396,7 @@ async def list_all_tasks(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"tasks": json_to_toon(data)}
+    return _list_response(data, "tasks", "tasksUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Task", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -1529,7 +1555,7 @@ async def list_all_workflows(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"workflows": json_to_toon(data)}
+    return _list_response(data, "workflows", "workflowsUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Workflow", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -1649,7 +1675,7 @@ async def list_all_mail_accounts(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"mail_accounts": json_to_toon(data)}
+    return _list_response(data, "mail_accounts", "mailAccountsUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Mail Account", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
@@ -1781,7 +1807,7 @@ async def list_all_mail_rules(
         include_all_fields=include_all_fields if ALLOW_ALL_AGGREGATE else False,
         page_size=page_size,
     )
-    return {"mail_rules": json_to_toon(data)}
+    return _list_response(data, "mail_rules", "mailRulesUrl")
 
 
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Mail Rule", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
