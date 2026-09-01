@@ -25,8 +25,6 @@ MCP_SERVER_PORT = os.environ.get("MCP_SERVER_PORT", "")
 API_KEY = os.environ.get("API_KEY", "")
 MCP_URL = f"http://localhost:{MCP_SERVER_PORT}/mcp"
 
-PUBLIC_URL = os.environ.get("PAPERLESS_PUBLIC_URL", "").rstrip("/")
-
 MCP_HEADERS = {
     "Authorization": f"Token {API_KEY}",
 }
@@ -445,8 +443,7 @@ async def main():
         await run(session, "T04 list_correspondents", "list_all_correspondents")
         data = results[-1].get("data", {})
         assert_content("T04 list_correspondents", data, ["correspondents"])
-        if PUBLIC_URL:
-            assert_content("T04 list_correspondents (url)", data, ["correspondentsUrl"])
+        assert_content("T04 list_correspondents (url)", data, ["correspondentsUrl"])
 
         await run(session, "T05 list_document_types", "list_all_document_types")
         assert_content("T05 list_document_types", results[-1].get("data", {}), ["document_types"])
@@ -454,8 +451,7 @@ async def main():
         await run(session, "T06 list_tags", "list_all_tags")
         data = results[-1].get("data", {})
         assert_content("T06 list_tags", data, ["tags"])
-        if PUBLIC_URL:
-            assert_content("T06 list_tags (url)", data, ["tagsUrl"])
+        assert_content("T06 list_tags (url)", data, ["tagsUrl"])
 
         await run(session, "T07 list_storage_paths", "list_all_storage_paths")
         assert_content("T07 list_storage_paths", results[-1].get("data", {}), ["storage_paths"])
@@ -469,8 +465,7 @@ async def main():
         await run(session, "T10 list_workflows", "list_all_workflows")
         data = results[-1].get("data", {})
         assert_content("T10 list_workflows", data, ["workflows"])
-        if PUBLIC_URL:
-            assert_content("T10 list_workflows (url)", data, ["workflowsUrl"])
+        assert_content("T10 list_workflows (url)", data, ["workflowsUrl"])
 
         await run(session, "T11 list_mail_accounts", "list_all_mail_accounts")
         assert_content("T11 list_mail_accounts", results[-1].get("data", {}), ["mail_accounts"])
@@ -588,8 +583,7 @@ async def main():
                   {"id": pick_id(state, "savedview")})
         store_on_pass("T34 get_saved_view", None, state, "savedview_get")
         assert_content("T34 get_saved_view", state.get("savedview_get", {}), ["id", "name"])
-        if PUBLIC_URL:
-            assert_content("T34 get_saved_view (url)", state.get("savedview_get", {}), ["savedViewUrl"])
+        assert_content("T34 get_saved_view (url)", state.get("savedview_get", {}), ["savedViewUrl"])
 
         gid = pick_id(state, "savedview_get") or pick_id(state, "savedview")
         await run(session, "T35 update_saved_view", "update_saved_view",
@@ -726,8 +720,7 @@ async def main():
         data = results[-1].get("data", {})
         assert_content("T60 get_document", data, ["id", "title"])
         assert_no_content("T60 get_document", data)
-        if PUBLIC_URL:
-            assert_content("T60 get_document (url)", data, ["documentUrl"])
+        assert_content("T60 get_document (url)", data, ["documentUrl"])
 
         await run(session, "T60b get_document_content", "get_document_content",
                   {"id": doc_id})
@@ -824,8 +817,7 @@ async def main():
                   {"id": share_id})
         data = results[-1].get("data", {})
         assert_content("T79 get_share_link", data, ["id"])
-        if PUBLIC_URL:
-            assert_content("T79 get_share_link (url)", data, ["shareLinkUrl"])
+        assert_content("T79 get_share_link (url)", data, ["shareLinkUrl"])
 
         await run(session, "T80 delete_share_link", "delete_share_link",
                   {"id": share_id})
@@ -908,26 +900,25 @@ async def main():
                 data = results[-1].get("data", {})
                 assert_content("T91 search_documents", data, ["results"])
                 assert_no_content("T91 search_documents", data)
-                if PUBLIC_URL:
-                    items = get_list_items(data)
-                    matched = next(
-                        (i for i in items if isinstance(i, dict) and i.get("id") == search_doc_id),
-                        None,
-                    )
-                    if matched and "documentUrl" in matched:
-                        results.append({
-                            "label": "T91 search_documents (url)", "tool": "", "status": "PASSED",
-                            "data": {"assertion": "documentUrl present on search result",
-                                     "documentUrl": matched["documentUrl"]}
-                        })
-                        log("  PASS T91 search_documents (url): documentUrl present")
-                    else:
-                        results.append({
-                            "label": "T91 search_documents (url)", "tool": "", "status": "FAILED",
-                            "reason": f"Search did not return marker doc with documentUrl. "
-                                      f"Got: {str(data)[:300]}"
-                        })
-                        log("  FAIL T91 search_documents (url): missing documentUrl on marker doc")
+                items = get_list_items(data)
+                matched = next(
+                    (i for i in items if isinstance(i, dict) and i.get("id") == search_doc_id),
+                    None,
+                )
+                if matched and "documentUrl" in matched:
+                    results.append({
+                        "label": "T91 search_documents (url)", "tool": "", "status": "PASSED",
+                        "data": {"assertion": "documentUrl present on search result",
+                                 "documentUrl": matched["documentUrl"]},
+                    })
+                    log("  PASS T91 search_documents (url): documentUrl present")
+                else:
+                    results.append({
+                        "label": "T91 search_documents (url)", "tool": "", "status": "FAILED",
+                        "reason": f"Search did not return marker doc with documentUrl. "
+                                  f"Got: {str(data)[:300]}",
+                    })
+                    log("  FAIL T91 search_documents (url): missing documentUrl on marker doc")
                 await session.call_tool("delete_document", {"id": search_doc_id})
 
         await run(session, "T92 search_autocomplete", "search_autocomplete",
