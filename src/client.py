@@ -146,7 +146,23 @@ class PaperlessClient:
                 data[field] = public_url + path
         return data
 
+    def _strip_content(self, data: Any) -> Any:
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    item.pop("content", None)
+        elif isinstance(data, dict):
+            if "results" in data and isinstance(data["results"], list):
+                for item in data["results"]:
+                    if isinstance(item, dict):
+                        item.pop("content", None)
+            else:
+                data.pop("content", None)
+        return data
+
     def _process(self, data: Any, entity: str, include_all_fields: bool, public_url: Optional[str]) -> Any:
+        if entity == "document":
+            data = self._strip_content(data)
         fields = COMMON_FIELDS[_ENTITY_FIELDS[entity]] if not include_all_fields else None
         if isinstance(data, dict) and "results" in data:
             items = data["results"]
@@ -181,6 +197,11 @@ class PaperlessClient:
             params["fields"] = COMMON_FIELDS["Documents"]
         data = await self.get(f"/api/documents/{document_id}/", api_key, params=params or None)
         return self._process(data, "document", include_all_fields, self.public_url)
+
+    async def get_document_content(self, document_id: int, api_key: Optional[str] = None) -> Any:
+        data = await self.get(f"/api/documents/{document_id}/", api_key, params={"fields": "content"})
+        content = data.get("content") if isinstance(data, dict) else None
+        return {"document_id": document_id, "content": content or ""}
 
     async def update_document(self, document_id: int, payload: dict[str, Any], api_key: Optional[str] = None, include_all_fields: bool = False) -> Any:
         payload = self._normalize_payload(payload)
@@ -598,6 +619,7 @@ class PaperlessClient:
             params["db_only"] = "true"
         data = await self.get("/api/search/", api_key, params=params)
         if isinstance(data, dict) and "documents" in data:
+            data["documents"] = self._strip_content(data["documents"])
             data["documents"] = self._augment_urls(data["documents"], "document", self.public_url)
         return data
 

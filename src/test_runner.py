@@ -222,6 +222,36 @@ def assert_content(label: str, data: Any, required_fields: list[str]) -> None:
     log(f"  PASS {label} (assert): fields {required_fields} present")
 
 
+def assert_no_content(label: str, data: Any) -> None:
+    """Fail if a 'content' field appears anywhere in the response."""
+    offenders: list[dict[str, Any]] = []
+
+    def _scan(node: Any) -> None:
+        if isinstance(node, dict):
+            if "content" in node:
+                offenders.append(node)
+            for v in node.values():
+                _scan(v)
+        elif isinstance(node, list):
+            for v in node:
+                _scan(v)
+
+    _scan(data)
+    if offenders:
+        results.append({
+            "label": f"{label} (assert no content)", "tool": "", "status": "FAILED",
+            "reason": f"{len(offenders)} object(s) contained a 'content' field. "
+                      f"Sample: {str(offenders[0])[:200]}"
+        })
+        log(f"  FAIL {label} (assert no content): 'content' present on {len(offenders)} object(s)")
+    else:
+        results.append({
+            "label": f"{label} (assert no content)", "tool": "", "status": "PASSED",
+            "data": {"assertion": "no 'content' field"}
+        })
+        log(f"  PASS {label} (assert no content): no 'content' field")
+
+
 def assert_id_valid(label: str, data: Any) -> None:
     """Check that response contains a positive 'id' field."""
     obj_id = 0
@@ -687,6 +717,7 @@ async def main():
         await run(session, "T59 list_all_documents", "list_all_documents")
         store_on_pass("T59 list_all_documents", None, state, "all_documents")
         assert_content("T59 list_all_documents", results[-1].get("data", {}), ["documents"])
+        assert_no_content("T59 list_all_documents", results[-1].get("data", {}))
 
         doc_id = state.get("doc_id", 0)
 
@@ -694,8 +725,30 @@ async def main():
                   {"id": doc_id})
         data = results[-1].get("data", {})
         assert_content("T60 get_document", data, ["id", "title"])
+        assert_no_content("T60 get_document", data)
         if PUBLIC_URL:
             assert_content("T60 get_document (url)", data, ["documentUrl"])
+
+        await run(session, "T60b get_document_content", "get_document_content",
+                  {"id": doc_id})
+        gdc = results[-1].get("data", {})
+        assert_content("T60b get_document_content", gdc, ["document_id", "content"])
+        value = gdc.get("content") if isinstance(gdc, dict) else None
+        if isinstance(value, str) and "OpenCode test document" in value:
+            results.append({
+                "label": "T60b get_document_content (assert full text)", "tool": "",
+                "status": "PASSED",
+                "data": {"assertion": "full test-document text returned",
+                         "content_length": len(value)}
+            })
+            log(f"  PASS T60b get_document_content (assert full text): {len(value)} chars")
+        else:
+            results.append({
+                "label": "T60b get_document_content (assert full text)", "tool": "",
+                "status": "FAILED",
+                "reason": f"Content missing/empty or not the uploaded test text. Got: {str(gdc)[:200]}"
+            })
+            log("  FAIL T60b get_document_content (assert full text): unexpected content")
 
         await run(session, "T61 get_document_metadata", "get_document_metadata",
                   {"id": doc_id})
@@ -854,6 +907,7 @@ async def main():
                           {"query": search_term})
                 data = results[-1].get("data", {})
                 assert_content("T91 search_documents", data, ["results"])
+                assert_no_content("T91 search_documents", data)
                 if PUBLIC_URL:
                     items = get_list_items(data)
                     matched = next(

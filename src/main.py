@@ -390,6 +390,19 @@ async def get_document(
     return await get_client().get_document(id, get_user_token(), include_all_fields=include_all_fields)
 
 
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Get Document Content", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
+async def get_document_content(
+    id: int,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """CAUTION - This request will return the FULL textual content of this document. Only use this function if you are certain that this is what you need.
+
+    Args:
+        id: ID of the document.
+    """
+    return await get_client().get_document_content(id, get_user_token())
+
+
 @mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Update Document", readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def update_document(
     id: int,
