@@ -504,7 +504,7 @@ async def upload_document(
     content: str,
     ctx: Context = None
 ) -> dict[str, Any]:
-    """Upload a new text document to Paperless and wait until it is consumed.
+    """Upload a new text document to Paperless. Returns as soon as the upload is accepted; processing continues asynchronously.
 
     Args:
         title: Title to assign to the document.
@@ -519,7 +519,7 @@ async def upload_document_from_url(
     url: str,
     ctx: Context = None
 ) -> dict[str, Any]:
-    """Download a PDF from a URL and upload it into the user's Paperless account.
+    """Download a PDF from a URL and upload it into the user's Paperless account. Returns as soon as the upload is accepted; processing continues asynchronously.
 
     Verifies the URL resolves to a real PDF (content-type and %PDF- header) before uploading.
 

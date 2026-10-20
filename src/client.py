@@ -1,7 +1,5 @@
 import os
 import re
-import time
-import asyncio
 import datetime as dt
 from typing import Any, Optional
 
@@ -212,8 +210,7 @@ class PaperlessClient:
         filename = re.sub(r"[^\w.\-]+", "_", title).rstrip("._") + ".txt"
         url = f"{self.base_url}/api/documents/post_document/"
         headers = {"Authorization": f"Token {api_key}"} if api_key else {}
-        deadline = time.monotonic() + timeout
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=float(timeout)) as client:
             response = await client.post(
                 url,
                 headers=headers,
@@ -221,18 +218,17 @@ class PaperlessClient:
                 data={"title": title},
             )
             response.raise_for_status()
-            while time.monotonic() < deadline:
-                await asyncio.sleep(1)
-                r = await client.get(
-                    f"{self.base_url}/api/documents/",
-                    headers=headers,
-                    params={"page_size": 50, "ordering": "-id"},
-                )
-                r.raise_for_status()
-                for doc in r.json().get("results", []):
-                    if doc.get("title") == title:
-                        return self._process(doc, "document", include_all_fields, self.public_url)
-        raise TimeoutError(f"Uploaded document was not created within {timeout}s")
+            try:
+                task_id = response.json()
+            except Exception:
+                task_id = response.text.strip().strip('"')
+            return {
+                "status": "uploaded",
+                "message": "Document uploaded and queued for processing.",
+                "task_id": task_id,
+                "title": title,
+                "filename": filename,
+            }
 
     def _validate_pdf(self, response: httpx.Response, url: str) -> None:
         content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
@@ -263,8 +259,7 @@ class PaperlessClient:
         if not re.match(r"^https?://", url, re.IGNORECASE):
             raise ValueError(f"URL must use http or https scheme: {url}")
         headers = {"Authorization": f"Token {api_key}"} if api_key else {}
-        deadline = time.monotonic() + timeout
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=float(timeout), follow_redirects=True) as client:
             download = await client.get(url)
             download.raise_for_status()
             self._validate_pdf(download, url)
@@ -277,18 +272,17 @@ class PaperlessClient:
                 data={"title": title},
             )
             response.raise_for_status()
-            while time.monotonic() < deadline:
-                await asyncio.sleep(1)
-                r = await client.get(
-                    f"{self.base_url}/api/documents/",
-                    headers=headers,
-                    params={"page_size": 50, "ordering": "-id"},
-                )
-                r.raise_for_status()
-                for doc in r.json().get("results", []):
-                    if doc.get("title") == title:
-                        return self._process(doc, "document", include_all_fields, self.public_url)
-        raise TimeoutError(f"Uploaded document was not created within {timeout}s")
+            try:
+                task_id = response.json()
+            except Exception:
+                task_id = response.text.strip().strip('"')
+            return {
+                "status": "uploaded",
+                "message": "Document uploaded and queued for processing.",
+                "task_id": task_id,
+                "title": title,
+                "filename": filename,
+            }
 
     async def delete_document(self, document_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/documents/{document_id}/", api_key)
