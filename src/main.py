@@ -514,6 +514,21 @@ async def upload_document(
     return data
 
 
+@mcp.tool(tags={"primary", "paperless"}, annotations=ToolAnnotations(title="Upload Document From Url", readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=True))
+async def upload_document_from_url(
+    url: str,
+    ctx: Context = None
+) -> dict[str, Any]:
+    """Download a PDF from a URL and upload it into the user's Paperless account.
+
+    Verifies the URL resolves to a real PDF (content-type and %PDF- header) before uploading.
+
+    Args:
+        url: http/https URL that resolves to a PDF file (redirects are followed).
+    """
+    return await get_client().upload_document_from_url(url, get_user_token())
+
+
 @mcp.tool(tags={"advanced", "paperless"}, annotations=ToolAnnotations(title="Get Next Asn", readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
 async def get_next_asn(ctx: Context = None) -> dict[str, Any]:
     """Get the next available Archive Serial Number."""

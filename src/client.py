@@ -234,6 +234,62 @@ class PaperlessClient:
                         return self._process(doc, "document", include_all_fields, self.public_url)
         raise TimeoutError(f"Uploaded document was not created within {timeout}s")
 
+    def _validate_pdf(self, response: httpx.Response, url: str) -> None:
+        content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+        body = response.content
+        if not body.startswith(b"%PDF-"):
+            raise ValueError(f"URL does not point to a PDF file (missing %PDF- header): {url}")
+        path = url.split("?", 1)[0].split("#", 1)[0].lower()
+        pdfish_type = content_type in ("application/pdf", "application/x-pdf", "application/octet-stream")
+        if not pdfish_type and not path.endswith(".pdf"):
+            raise ValueError(
+                f"URL does not point to a PDF file (unexpected content-type '{content_type}'): {url}"
+            )
+
+    def _filename_from_response(self, response: httpx.Response, url: str) -> str:
+        disposition = response.headers.get("content-disposition", "")
+        match = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^\";]+)"?', disposition, re.IGNORECASE)
+        if match:
+            name = match.group(1).strip()
+            if name:
+                return name
+        path = url.split("?", 1)[0].split("#", 1)[0].rstrip("/")
+        name = path.rsplit("/", 1)[-1]
+        if not name.lower().endswith(".pdf"):
+            name = (name or "document") + ".pdf"
+        return name
+
+    async def upload_document_from_url(self, url: str, api_key: Optional[str] = None, include_all_fields: bool = False, timeout: int = 60) -> Any:
+        if not re.match(r"^https?://", url, re.IGNORECASE):
+            raise ValueError(f"URL must use http or https scheme: {url}")
+        headers = {"Authorization": f"Token {api_key}"} if api_key else {}
+        deadline = time.monotonic() + timeout
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            download = await client.get(url)
+            download.raise_for_status()
+            self._validate_pdf(download, url)
+            filename = self._filename_from_response(download, url)
+            title = re.sub(r"\.pdf$", "", filename, flags=re.IGNORECASE)
+            response = await client.post(
+                f"{self.base_url}/api/documents/post_document/",
+                headers=headers,
+                files={"document": (filename, download.content, "application/pdf")},
+                data={"title": title},
+            )
+            response.raise_for_status()
+            while time.monotonic() < deadline:
+                await asyncio.sleep(1)
+                r = await client.get(
+                    f"{self.base_url}/api/documents/",
+                    headers=headers,
+                    params={"page_size": 50, "ordering": "-id"},
+                )
+                r.raise_for_status()
+                for doc in r.json().get("results", []):
+                    if doc.get("title") == title:
+                        return self._process(doc, "document", include_all_fields, self.public_url)
+        raise TimeoutError(f"Uploaded document was not created within {timeout}s")
+
     async def delete_document(self, document_id: int, api_key: Optional[str] = None) -> Any:
         await self.delete(f"/api/documents/{document_id}/", api_key)
         return {"message": "Document successfully deleted."}
